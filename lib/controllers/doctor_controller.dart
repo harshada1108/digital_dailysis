@@ -52,6 +52,7 @@ class DoctorController extends GetxController implements GetxService {
     if (response.statusCode == 200) {
       final decoded = jsonDecode(response.body);
       final success = decoded['success'];
+      print(decoded);
       if (success) {
         Get.offNamed(RouteHelper.getDoctorHomeScreen(doctorId));
         Get.snackbar(

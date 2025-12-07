@@ -1,5 +1,6 @@
 
 
+import 'package:digitaldailysis/controllers/Patient_info_controller.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -21,6 +22,7 @@ Future<void> init() async {
   Get.put(LoginController(loginRepo: Get.find()));
   // Repositories
   Get.put(DoctorRepo(apiClient: Get.find()));
+  Get.put(PatientInfoController(patientId: ''));
 
   // Controllers
   Get.put(DoctorController(doctorRepo: Get.find()));

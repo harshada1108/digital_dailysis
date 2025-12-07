@@ -21,6 +21,7 @@ class LoginController extends GetxController implements GetxService {
 
     http.Response response = await loginRepo.login(loginId, password);
 
+
     _isLoading = false;
     update();
 
@@ -33,22 +34,22 @@ class LoginController extends GetxController implements GetxService {
       final role = user['role'];
       final token = data['token'];
 
-      // ✅ Check for missing token
+
       if (token == null || token.toString().isEmpty) {
         customSnackBar("No token found in response");
         return;
       }
 
-      // ✅ Save token and user info in SharedPreferences
+
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(AppConstants.TOKEN, token);
       await prefs.setString("userRole", role);
       await prefs.setString("userId", user["id"]);
 
-      // ✅ Update token header in ApiClient dynamically
+
       loginRepo.apiClient.updateHeader(token);
 
-      // ✅ Navigate based on role
+
       if (role == 'doctor') {
         Get.offNamed(RouteHelper.getDoctorHomeScreen(user["id"]));
       } else if (role == 'patient') {

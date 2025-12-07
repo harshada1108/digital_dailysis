@@ -92,6 +92,8 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
                     ],
                     borderRadius: BorderRadius.circular(16),
                   ),
+
+
                   child: ListTile(
                     leading: CircleAvatar(
                       backgroundColor: Colors.blueAccent.withOpacity(0.1),
@@ -116,6 +118,13 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
                       color: Colors.blueAccent,
                       size: size.width * 0.04,
                     ),
+                    onTap: () {
+                      // navigate by named route (recommended)
+                      Get.toNamed(
+                        RouteHelper.getPatientInfoScreen(
+                            patient.id),
+                      );
+                    }
                   ),
                 );
               },
