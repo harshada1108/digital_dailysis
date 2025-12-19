@@ -38,7 +38,7 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         centerTitle: true,
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: Colors.blue[700],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
@@ -51,7 +51,7 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
             doctorController.fetchPatients(widget.doctorId);
           }
         },
-        backgroundColor: Colors.blueAccent,
+        backgroundColor: Colors.blue[700],
         child: const Icon(Icons.person_add, color: Colors.white),
       ),
       body: GetBuilder<DoctorController>(
@@ -96,8 +96,8 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
 
                   child: ListTile(
                     leading: CircleAvatar(
-                      backgroundColor: Colors.blueAccent.withOpacity(0.1),
-                      child: const Icon(Icons.person, color: Colors.blueAccent),
+                      backgroundColor: Colors.amberAccent.withOpacity(0.1),
+                      child: Icon(Icons.person, color:Colors.blue[700]!),
                     ),
                     title: Text(
                       patient.name,
@@ -115,7 +115,7 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
                     ),
                     trailing: Icon(
                       Icons.arrow_forward_ios,
-                      color: Colors.blueAccent,
+                      color:Colors.blue[700],
                       size: size.width * 0.04,
                     ),
                     onTap: () {

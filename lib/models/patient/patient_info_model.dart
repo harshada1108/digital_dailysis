@@ -1,4 +1,4 @@
-// lib/models/patient_info_model.dart
+// lib/models/patient/patient_info_model.dart
 
 class PatientInfoResponse {
   final bool success;
@@ -42,7 +42,7 @@ class PatientShort {
 class MaterialSession {
   final String materialSessionId;
   final DateTime? createdAt;
-  final String status; // e.g., acknowledged
+  final String status;
   final DateTime? acknowledgedAt;
   final Materials materials;
   final int plannedSessions;
@@ -140,7 +140,7 @@ class MaterialImage {
 
 class DayItem {
   final int dayNumber;
-  final String status; // completed | pending | ...
+  final String status;
   final String? sessionId;
   final DateTime? completedAt;
   final Map<String, dynamic>? parameters;

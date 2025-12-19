@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:digitaldailysis/controllers/patient_panel_controller.dart';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
@@ -19,8 +20,15 @@ class LoginController extends GetxController implements GetxService {
     _isLoading = true;
     update();
 
-    http.Response response = await loginRepo.login(loginId, password);
-
+    http.Response response;
+    try {
+      response = await loginRepo.login(loginId, password);
+    } catch (e) {
+      _isLoading = false;
+      update();
+      customSnackBar("Network error: $e");
+      return;
+    }
 
     _isLoading = false;
     update();
@@ -30,37 +38,67 @@ class LoginController extends GetxController implements GetxService {
 
     if (response.statusCode == 200) {
       final data = jsonDecode(response.body);
-      final user = data['user']; // map
-      final role = user['role'];
-      final token = data['token'];
+      final user = data['user'] ?? {};
+      final role = user['role'] ?? data['role'] ?? '';
+      final token = data['token'] ?? '';
 
-
+      // validate token
       if (token == null || token.toString().isEmpty) {
         customSnackBar("No token found in response");
         return;
       }
 
+      // get user id (robust to _id or id)
+      final userId = user['id'] ?? user['_id'] ?? '';
 
+      if (userId.toString().isEmpty) {
+        customSnackBar("No user id returned by server");
+        return;
+      }
+
+      // Save to shared prefs
       final prefs = await SharedPreferences.getInstance();
       await prefs.setString(AppConstants.TOKEN, token);
       await prefs.setString("userRole", role);
-      await prefs.setString("userId", user["id"]);
+      await prefs.setString("userId", userId.toString());
 
+      // Update ApiClient header so subsequent requests include token
+      try {
+        loginRepo.apiClient.updateHeader(token);
+      } catch (e) {
+        print('Warning: failed to update api client header: $e');
+      }
 
-      loginRepo.apiClient.updateHeader(token);
-
-
+      // Navigate according to role, pass patientId when user is patient
       if (role == 'doctor') {
-        Get.offNamed(RouteHelper.getDoctorHomeScreen(user["id"]));
+        Get.offNamed(RouteHelper.getDoctorHomeScreen(userId.toString()));
       } else if (role == 'patient') {
-        Get.offNamed(RouteHelper.getPatientHomeScreen());
+        final patientId = user["id"];
+
+        Get.put(
+          PatientPanelController(
+            apiClient: loginRepo.apiClient,
+            patientId: patientId,
+          ),
+          tag: patientId,
+        );
+
+        Get.toNamed(RouteHelper.getPatientHomeScreen(patientId), arguments: patientId);
       } else {
         customSnackBar("Invalid role received");
+        print("Login returned unexpected role: $role");
       }
     } else if (response.statusCode == 401) {
       customSnackBar("Invalid credentials");
     } else {
-      customSnackBar("Something went wrong. Try again later.");
+      // attempt to parse message if any
+      try {
+        final body = jsonDecode(response.body);
+        final msg = body['message'] ?? body['error'] ?? '';
+        customSnackBar(msg.isNotEmpty ? msg : "Something went wrong. Try again later.");
+      } catch (_) {
+        customSnackBar("Something went wrong. Try again later.");
+      }
     }
   }
 }

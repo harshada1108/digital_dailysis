@@ -1,6 +1,7 @@
 
 
 import 'package:digitaldailysis/controllers/Patient_info_controller.dart';
+import 'package:digitaldailysis/controllers/patient_panel_controller.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -23,6 +24,15 @@ Future<void> init() async {
   // Repositories
   Get.put(DoctorRepo(apiClient: Get.find()));
   Get.put(PatientInfoController(patientId: ''));
+  Get.put(
+    PatientPanelController(
+      apiClient: Get.find<ApiClient>(),
+      patientId: '',     // real patient ID
+    ),
+    tag: '',
+  );
+
+
 
   // Controllers
   Get.put(DoctorController(doctorRepo: Get.find()));
