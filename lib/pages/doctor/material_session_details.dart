@@ -66,24 +66,7 @@ class MaterialSessionDetailScreen extends StatelessWidget {
                                       fontWeight: FontWeight.w500,
                                     ),
                                   ),
-                                  SizedBox(height: h * 0.003),
-                                  Text(
-                                    materialSession.materialSessionId.length > 12
-                                        ? '${materialSession.materialSessionId.substring(0, 12)}...'
-                                        : materialSession.materialSessionId,
-                                    style: TextStyle(
-                                      fontSize: w * 0.042,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.white,
-                                      shadows: [
-                                        Shadow(
-                                          color: Colors.black.withOpacity(0.3),
-                                          offset: Offset(0, 2),
-                                          blurRadius: 4,
-                                        ),
-                                      ],
-                                    ),
-                                  ),
+
                                   SizedBox(height: h * 0.005),
                                   Container(
                                     padding: EdgeInsets.symmetric(horizontal: w * 0.025, vertical: h * 0.005),

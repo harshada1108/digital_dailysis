@@ -29,6 +29,7 @@ class _CreateActiveMaterialScreenState
 
   int sessionsCount = 5;
   String dialysisMachine = 'portable';
+
   bool dialyzer = true;
   bool bloodTubingSets = true;
   bool dialysisNeedles = true;
@@ -37,7 +38,7 @@ class _CreateActiveMaterialScreenState
   bool salineSolution = true;
 
   final TextEditingController notesController =
-  TextEditingController(text: 'Kit for 5 days issued.');
+  TextEditingController(text: 'Kit issued for 5 days.');
 
   @override
   void initState() {
@@ -59,12 +60,24 @@ class _CreateActiveMaterialScreenState
 
   Future<void> pickImages() async {
     final picked = await _picker.pickMultiImage(imageQuality: 80);
-    if (picked != null) {
+    if (picked != null && picked.isNotEmpty) {
       setState(() => images = picked);
     }
   }
 
   Future<void> submit() async {
+    /// 🚨 PHOTO IS COMPULSORY
+    if (images.isEmpty) {
+      Get.snackbar(
+        'Photo Required',
+        'Please upload at least one dialysis kit photo to continue.',
+        backgroundColor: Colors.orange,
+        colorText: Colors.white,
+        snackPosition: SnackPosition.BOTTOM,
+      );
+      return;
+    }
+
     final id = await controller.createAndUpload(
       sessionsCount: sessionsCount,
       dialysisMachine: dialysisMachine,
@@ -75,125 +88,150 @@ class _CreateActiveMaterialScreenState
       heparin: heparin,
       salineSolution: salineSolution,
       notes: notesController.text.trim(),
-      imageFiles: images,  // ✅ Pass XFile objects directly, not paths
+      imageFiles: images, // ✅ XFile list
     );
 
     if (id != null) {
       Get.back(result: true);
-      Get.snackbar('Success', 'Dialysis material created successfully',
-          backgroundColor: Colors.green, colorText: Colors.white);
+      Get.snackbar(
+        'Saved Successfully',
+        'Dialysis kit details have been saved.',
+        backgroundColor: Colors.green,
+        colorText: Colors.white,
+      );
     } else {
-      Get.snackbar('Error', controller.errorMsg.value.isEmpty
-          ? 'Failed to create material'
-          : controller.errorMsg.value,
-          backgroundColor: Colors.red, colorText: Colors.white);
+      Get.snackbar(
+        'Error',
+        controller.errorMsg.value.isEmpty
+            ? 'Unable to save details'
+            : controller.errorMsg.value,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+      );
     }
   }
+
   @override
   Widget build(BuildContext context) {
     final w = MediaQuery.of(context).size.width;
     final h = MediaQuery.of(context).size.height;
 
+    final canSubmit = images.isNotEmpty && !controller.isSubmitting.value;
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Create Dialysis Material'),
-        flexibleSpace: Container(
-          decoration: const BoxDecoration(
-            gradient: LinearGradient(
-              colors: [Color(0xff1E88E5), Color(0xff1565C0)],
-            ),
-          ),
-        ),
+        title: const Text('Dialysis Kit Details'),
+        backgroundColor: const Color(0xff1565C0),
+        elevation: 0,
       ),
       body: SingleChildScrollView(
-        padding: EdgeInsets.all(w * 0.045),
+        padding: EdgeInsets.all(w * 0.05),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            _card(
+            /// 🗓 TREATMENT DETAILS
+            _sectionCard(
+              icon: Icons.calendar_today,
+              title: 'Treatment Duration',
+              child: Row(
+                children: [
+                  Expanded(
+                    child: TextFormField(
+                      initialValue: sessionsCount.toString(),
+                      keyboardType: TextInputType.number,
+                      decoration: const InputDecoration(
+                        labelText: 'Number of days',
+                      ),
+                      onChanged: (v) {
+                        sessionsCount = int.tryParse(v) ?? sessionsCount;
+                        notesController.text =
+                        'Kit issued for $sessionsCount days.';
+                      },
+                    ),
+                  ),
+                  SizedBox(width: w * 0.04),
+                  Expanded(
+                    child: DropdownButtonFormField<String>(
+                      value: dialysisMachine,
+                      decoration:
+                      const InputDecoration(labelText: 'Machine type'),
+                      items: ['portable', 'automated', 'other']
+                          .map(
+                            (e) => DropdownMenuItem(
+                          value: e,
+                          child: Text(e.capitalizeFirst!),
+                        ),
+                      )
+                          .toList(),
+                      onChanged: (v) =>
+                          setState(() => dialysisMachine = v!),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: h * 0.025),
+
+            /// 🩺 INCLUDED SUPPLIES
+            _sectionCard(
+              icon: Icons.medical_services,
+              title: 'Included Medical Supplies',
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextFormField(
-                          initialValue: sessionsCount.toString(),
-                          keyboardType: TextInputType.number,
-                          decoration:
-                          const InputDecoration(labelText: 'Sessions'),
-                          onChanged: (v) {
-                            sessionsCount = int.tryParse(v) ?? sessionsCount;
-                            notesController.text =
-                            'Kit for $sessionsCount days issued.';
-                          },
-                        ),
-                      ),
-                      SizedBox(width: w * 0.04),
-                      Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: dialysisMachine,
-                          decoration:
-                          const InputDecoration(labelText: 'Machine'),
-                          items: ['portable', 'automated', 'other']
-                              .map((e) =>
-                              DropdownMenuItem(value: e, child: Text(e)))
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => dialysisMachine = v!),
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 12),
-                  _check('Dialyzer', dialyzer, (v) => setState(() => dialyzer = v)),
+                  _check('Dialyzer (Filter)', dialyzer,
+                          (v) => setState(() => dialyzer = v)),
                   _check('Blood Tubing Sets', bloodTubingSets,
                           (v) => setState(() => bloodTubingSets = v)),
                   _check('Dialysis Needles', dialysisNeedles,
                           (v) => setState(() => dialysisNeedles = v)),
                   _check('Dialysate Concentrates', dialysateConcentrates,
                           (v) => setState(() => dialysateConcentrates = v)),
-                  _check('Heparin', heparin, (v) => setState(() => heparin = v)),
+                  _check('Heparin Injection', heparin,
+                          (v) => setState(() => heparin = v)),
                   _check('Saline Solution', salineSolution,
                           (v) => setState(() => salineSolution = v)),
                 ],
               ),
             ),
 
-            SizedBox(height: h * 0.03),
+            SizedBox(height: h * 0.025),
 
-            _card(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Notes',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  TextField(
-                    controller: notesController,
-                    maxLines: 3,
-                    decoration:
-                    const InputDecoration(hintText: 'Optional notes'),
-                  ),
-                ],
+            /// 📝 NOTES
+            _sectionCard(
+              icon: Icons.notes,
+              title: 'Additional Notes (Optional)',
+              child: TextField(
+                controller: notesController,
+                maxLines: 3,
+                decoration: const InputDecoration(
+                  hintText: 'Any special instructions',
+                ),
               ),
             ),
 
-            SizedBox(height: h * 0.03),
+            SizedBox(height: h * 0.025),
 
-            _card(
+            /// 📸 PHOTOS (REQUIRED)
+            _sectionCard(
+              icon: Icons.photo_camera,
+              title: 'Dialysis Kit Photos (Required)',
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const Text('Material Images',
-                      style: TextStyle(fontWeight: FontWeight.bold)),
-                  SizedBox(height: h * 0.01),
                   ElevatedButton.icon(
                     onPressed: pickImages,
-                    icon: const Icon(Icons.photo),
-                    label: const Text('Pick Images'),
+                    icon: const Icon(Icons.add_a_photo),
+                    label: const Text('Add photo'),
                   ),
-                  SizedBox(height: h * 0.015),
-                  if (images.isNotEmpty)
+                  const SizedBox(height: 8),
+                  Text(
+                    'At least one photo is required for verification',
+                    style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                  ),
+                  if (images.isNotEmpty) ...[
+                    SizedBox(height: h * 0.015),
                     SizedBox(
                       height: h * 0.16,
                       child: ListView.separated(
@@ -206,12 +244,18 @@ class _CreateActiveMaterialScreenState
                           return Stack(
                             children: [
                               ClipRRect(
-                                borderRadius: BorderRadius.circular(12),
+                                borderRadius: BorderRadius.circular(14),
                                 child: kIsWeb
-                                    ? Image.network(img.path,
-                                    width: w * 0.45, fit: BoxFit.cover)
-                                    : Image.file(File(img.path),
-                                    width: w * 0.45, fit: BoxFit.cover),
+                                    ? Image.network(
+                                  img.path,
+                                  width: w * 0.45,
+                                  fit: BoxFit.cover,
+                                )
+                                    : Image.file(
+                                  File(img.path),
+                                  width: w * 0.45,
+                                  fit: BoxFit.cover,
+                                ),
                               ),
                               Positioned(
                                 top: 6,
@@ -231,41 +275,78 @@ class _CreateActiveMaterialScreenState
                         },
                       ),
                     ),
+                  ],
                 ],
               ),
             ),
 
             SizedBox(height: h * 0.04),
 
-            Obx(() => controller.isSubmitting.value
-                ? const Center(child: CircularProgressIndicator())
-                : ElevatedButton(
-              onPressed: submit,
-              style: ElevatedButton.styleFrom(
-                padding: EdgeInsets.symmetric(vertical: h * 0.018),
+            /// ✅ SUBMIT (DISABLED UNTIL PHOTO)
+            Obx(
+                  () => controller.isSubmitting.value
+                  ? const Center(child: CircularProgressIndicator())
+                  : SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: canSubmit ? submit : null,
+                  style: ElevatedButton.styleFrom(
+                    padding:
+                    EdgeInsets.symmetric(vertical: h * 0.018),
+                    backgroundColor: canSubmit
+                        ? const Color(0xff1565C0)
+                        : Colors.grey[400],
+                  ),
+                  child: const Text('Save & Continue'),
+                ),
               ),
-              child: const Text('Submit'),
-            )),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _card({required Widget child}) {
+  /// ---------------- UI HELPERS ----------------
+
+  Widget _sectionCard({
+    required IconData icon,
+    required String title,
+    required Widget child,
+  }) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: const [BoxShadow(color: Colors.black12, blurRadius: 8)],
+        borderRadius: BorderRadius.circular(18),
+        boxShadow: const [
+          BoxShadow(color: Colors.black12, blurRadius: 8),
+        ],
       ),
-      child: child,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: Colors.blue),
+              const SizedBox(width: 8),
+              Text(
+                title,
+                style:
+                const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          child,
+        ],
+      ),
     );
   }
 
   Widget _check(String label, bool value, ValueChanged<bool> onChanged) {
     return CheckboxListTile(
+      contentPadding: EdgeInsets.zero,
       value: value,
       title: Text(label),
       onChanged: (v) => onChanged(v ?? false),

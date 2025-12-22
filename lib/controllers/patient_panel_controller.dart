@@ -9,7 +9,7 @@ import 'package:digitaldailysis/models/patient/patient_info_model.dart';
 
 import '../utils/app_constants.dart';
 
-class PatientPanelController extends GetxController {
+class PatientPanelController extends GetxController  implements GetxService {
   final ApiClient apiClient;
   final String patientId;
 
@@ -37,6 +37,7 @@ class PatientPanelController extends GetxController {
 
       if (res.statusCode == 200) {
         final Map<String, dynamic> body = jsonDecode(res.body);
+        print(body);
         // parse into PatientInfoResponse model
         summary.value = PatientInfoResponse.fromJson(body);
       } else {
