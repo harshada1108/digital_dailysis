@@ -123,7 +123,8 @@ class RouteHelper {
         // if using named route, you'll pass the MaterialSession via arguments or fetch by id
         final msArg = Get.arguments;
         if (msArg is Map && msArg['materialSession'] != null) {
-          return MaterialSessionDetailScreen(materialSession: msArg['materialSession']);
+          // return MaterialSessionDetailScreen(materialSession: msArg['materialSession'], patientId: '',);
+          return MaterialSessionDetailScreen( patientId: '',);
         }
         // fallback empty page
         return Scaffold(body: Center(child: Text("No session provided")));
@@ -152,13 +153,15 @@ class RouteHelper {
       page: () => DayVoluntaryScreen(
         materialSessionId: Get.parameters['id']!,
         dayNumber: int.parse(Get.parameters['day']!),
+        patientId: ''
       ),
     ),
     GetPage(
       name: "/day-dialysis",
       page: () => DayDialysisScreen(
+        patientId: '',
         sessionId: Get.parameters['sid']!,
-        dayNumber: int.parse(Get.parameters['day']!),
+        dayNumber: int.parse(Get.parameters['day']!), MaterialSessionId: '',
       ),
     ),
   ];

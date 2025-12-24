@@ -6,16 +6,18 @@ import '../../controllers/patient_panel_controller.dart';
 class DayVoluntaryScreen extends StatelessWidget {
   final String materialSessionId;
   final int dayNumber;
+  final patientId;
 
   const DayVoluntaryScreen({
     super.key,
     required this.materialSessionId,
     required this.dayNumber,
+    required this.patientId
   });
 
   @override
   Widget build(BuildContext context) {
-    final patientId = Get.arguments;
+
     final controller = Get.find<PatientPanelController>(tag: patientId);
 
     return Scaffold(
@@ -32,7 +34,8 @@ class DayVoluntaryScreen extends StatelessWidget {
               if (sessionId != null) {
                 Get.to(() => DayDialysisScreen(
                   sessionId: sessionId,
-                  dayNumber: dayNumber,
+                  patientId: patientId,
+                  dayNumber: dayNumber, MaterialSessionId: materialSessionId,
                 ), arguments: patientId);
               }
             },

@@ -1,5 +1,6 @@
 import 'package:digitaldailysis/pages/doctor/create_active_material_screen.dart';
 import 'package:digitaldailysis/pages/doctor/material_session_details.dart';
+import 'package:digitaldailysis/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:digitaldailysis/controllers/patient_info_controller.dart';
@@ -55,6 +56,7 @@ class PatientInfoScreen extends StatelessWidget {
               actions: [
                 IconButton(
                   icon: const Icon(Icons.refresh),
+                  color: AppColors.lightGrey,
                   onPressed: () async {
                     await controller.refresh();
                   },
@@ -63,11 +65,7 @@ class PatientInfoScreen extends StatelessWidget {
               flexibleSpace: FlexibleSpaceBar(
                 background: Container(
                   decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                      colors: [Color(0xff1976D2), Color(0xff42A5F5)],
-                      begin: Alignment.topLeft,
-                      end: Alignment.bottomRight,
-                    ),
+                   color: AppColors.darkPrimary
                   ),
                   child: SafeArea(
                     child: Padding(
@@ -76,9 +74,9 @@ class PatientInfoScreen extends StatelessWidget {
                         children: [
                           CircleAvatar(
                             radius: w * 0.09,
-                            backgroundColor: Colors.white,
+                            backgroundColor: AppColors.white,
                             child: Icon(Icons.person,
-                                size: w * 0.09, color: Colors.blue),
+                                size: w * 0.09, color: AppColors.darkPrimary),
                           ),
                           SizedBox(width: w * 0.04),
                           Column(
@@ -118,7 +116,7 @@ class PatientInfoScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     /// CREATE SESSION BUTTON
-                    _createSessionButton(context, patient.id, w, h),
+                    _createSessionButton(context, patient.id, w,h),
 
                     SizedBox(height: h * 0.03),
 
@@ -126,7 +124,7 @@ class PatientInfoScreen extends StatelessWidget {
                     Row(
                       children: [
                         Icon(Icons.history,
-                            color: Colors.blue[700], size: w * 0.065),
+                            color: AppColors.darkGrey, size: w * 0.065),
                         SizedBox(width: w * 0.02),
                         Text(
                           "Medical Sessions",
@@ -158,22 +156,28 @@ class PatientInfoScreen extends StatelessWidget {
   }
 
   Widget _createSessionButton(
-      BuildContext context, String patientId, double w, double h) {
+      BuildContext context, String patientId, double w, double h ) {
     return InkWell(
       borderRadius: BorderRadius.circular(w * 0.04),
-      onTap: () {
-        Get.to(
+      onTap: () async {
+        final controller = Get.find<PatientInfoController>();
+
+        final result = await Get.to(
               () => CreateActiveMaterialScreen(
             doctorId: doctorId,
             patientId: patientId,
           ),
         );
+
+        if (result == true) {
+          controller.refresh();
+        }
+
       },
       child: Container(
         padding: EdgeInsets.all(w * 0.045),
         decoration: BoxDecoration(
-          gradient:
-          const LinearGradient(colors: [Color(0xff1E88E5), Color(0xff1565C0)]),
+          color: AppColors.darkPrimary,
           borderRadius: BorderRadius.circular(w * 0.04),
           boxShadow: const [
             BoxShadow(color: Colors.black12, blurRadius: 12),
@@ -228,8 +232,38 @@ class PatientInfoScreen extends StatelessWidget {
         ],
       ),
       child: InkWell(
-        onTap: () {
-          Get.to(() => MaterialSessionDetailScreen(materialSession: ms));
+        onTap: () async {
+          final controller = Get.find<PatientInfoController>();
+
+          Get.dialog(
+            const Center(child: CircularProgressIndicator()),
+            barrierDismissible: false,
+          );
+
+          await controller.fetchMaterialSessionDetailsByDoc(
+            patientId: patientId,
+            materialSessionId: ms.materialSessionId,
+          );
+
+          Get.back();
+
+          if (controller.materialSessionDetails.value != null) {
+            Get.to(
+                  () => MaterialSessionDetailScreen(
+
+
+                    patientId: patientId,
+              ),
+            );
+          } else {
+            Get.snackbar(
+              'Error',
+              controller.materialSessionError.value.isEmpty
+                  ? 'Failed to load session details'
+                  : controller.materialSessionError.value,
+              snackPosition: SnackPosition.BOTTOM,
+            );
+          }
         },
         child: Row(
           children: [
@@ -261,8 +295,10 @@ class PatientInfoScreen extends StatelessWidget {
               ),
             ),
             Container(
-              padding:
-              EdgeInsets.symmetric(horizontal: w * 0.03, vertical: h * 0.005),
+              padding: EdgeInsets.symmetric(
+                horizontal: w * 0.03,
+                vertical: h * 0.005,
+              ),
               decoration: BoxDecoration(
                 color: color.withOpacity(0.12),
                 borderRadius: BorderRadius.circular(w * 0.02),
@@ -280,6 +316,7 @@ class PatientInfoScreen extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _emptyState(double w, double h) {
     return Padding(

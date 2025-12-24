@@ -3,7 +3,8 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 
 import '../../controllers/patient_panel_controller.dart';
-import '../../routes/route_helper.dart';
+import '../../utils/colors.dart';
+import '../patient/material_session_details.dart';
 
 class PatientHomeScreen extends StatelessWidget {
   final String patientId;
@@ -11,222 +12,720 @@ class PatientHomeScreen extends StatelessWidget {
   const PatientHomeScreen({super.key, required this.patientId});
 
   String _formatDate(DateTime dt) {
-    return DateFormat('dd MMMM yyyy • hh:mm a').format(dt);
+    return DateFormat('dd MMM yyyy • hh:mm a').format(dt);
+  }
+
+  String _capitalizeFirst(String text) {
+    if (text.isEmpty) return text;
+    return text[0].toUpperCase() + text.substring(1).toLowerCase();
   }
 
   Color _statusColor(String status) {
     switch (status.toLowerCase()) {
-      case 'completed':
-        return Colors.green;
+      case 'acknowledged':
+        return AppStatusColors.success;
       case 'active':
-        return Colors.blue;
+        return AppStatusColors.active;
       case 'pending':
-        return Colors.orange;
+        return AppStatusColors.pending;
       default:
-        return Colors.grey;
+        return AppStatusColors.pending;
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final controller =
-    Get.find<PatientPanelController>(tag: patientId);
-
+    final controller = Get.find<PatientPanelController>(tag: patientId);
     final size = MediaQuery.of(context).size;
+    final w = size.width;
+    final h = size.height;
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        backgroundColor: const Color(0xff1565C0),
-        elevation: 0,
-        title: const Text('My Dialysis Care'),
-      ),
-      body: Obx(() {
-        if (controller.isLoading.value) {
-          return const Center(child: CircularProgressIndicator());
-        }
+    return DefaultTabController(
+      length: 2,
+      child: Scaffold(
+        backgroundColor: AppColors.lightGrey,
+        appBar: AppBar(
+          backgroundColor: AppColors.darkPrimary,
+          elevation: 0,
+          title: const Text(
+            'My Health Portal',
+            style: TextStyle(
+              color: AppColors.white,
+              fontWeight: FontWeight.w600,
+            ),
+          ),
+          centerTitle: true,
+          bottom: TabBar(
+            indicatorColor: AppColors.white,
+            indicatorWeight: 3,
+            labelColor: AppColors.white,
+            unselectedLabelColor: AppColors.white.withOpacity(0.6),
+            labelStyle: TextStyle(
+              fontSize: w * 0.04,
+              fontWeight: FontWeight.w600,
+            ),
+            tabs: const [
+              Tab(
+                icon: Icon(Icons.medical_services_outlined),
+                text: 'My Dialysis Care',
+              ),
+              Tab(
+                icon: Icon(Icons.school_outlined),
+                text: 'My Lectures',
+              ),
+            ],
+          ),
+        ),
+        body: Obx(() {
+          if (controller.isLoading.value) {
+            return const Center(child: CircularProgressIndicator());
+          }
 
-        if (controller.summary.value == null) {
-          return const Center(child: Text("No data available"));
-        }
+          if (controller.summary.value == null) {
+            return const Center(child: Text("No data available"));
+          }
 
-        final data = controller.summary.value!;
-        final patient = data.patient;
+          final data = controller.summary.value!;
+          final patient = data.patient;
 
-        return SingleChildScrollView(
-          padding: EdgeInsets.all(size.width * 0.05),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          return TabBarView(
             children: [
-              /// 👋 GREETING CARD
-              Container(
-                padding: EdgeInsets.all(size.width * 0.05),
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(
-                    colors: [Color(0xff1E88E5), Color(0xff1565C0)],
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: size.width * 0.09,
-                      backgroundColor: Colors.white,
-                      child: Icon(
-                        Icons.person,
-                        size: size.width * 0.1,
-                        color: Colors.blue,
-                      ),
-                    ),
-                    SizedBox(width: size.width * 0.04),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'Hello, ${patient.name} 👋',
-                            style: TextStyle(
-                              fontSize: size.width * 0.055,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                            ),
-                          ),
-                          SizedBox(height: size.height * 0.004),
-                          Text(
-                            patient.email,
-                            style: TextStyle(
-                              fontSize: size.width * 0.038,
-                              color: Colors.white70,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                ),
+              // ================= MY DIALYSIS CARE TAB =================
+              _buildDialysisCareTab(context, w, h, patient, data, controller),
+
+              // ================= MY LECTURES TAB =================
+              _buildLecturesTab(context, w, h, patient),
+            ],
+          );
+        }),
+      ),
+    );
+  }
+
+  Widget _buildDialysisCareTab(
+      BuildContext context,
+      double w,
+      double h,
+      dynamic patient,
+      dynamic data,
+      PatientPanelController controller,
+      ) {
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(w * 0.05),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ================= GREETING CARD =================
+          Container(
+            padding: EdgeInsets.all(w * 0.05),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.darkPrimary,
+                  AppColors.darkPrimary.withOpacity(0.8),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
               ),
-
-              SizedBox(height: size.height * 0.035),
-
-              /// 🧾 MATERIAL SESSIONS HEADER
-              Text(
-                'My Dialysis Kits',
-                style: TextStyle(
-                  fontSize: size.width * 0.055,
-                  fontWeight: FontWeight.bold,
-                  color: Colors.grey[800],
+              borderRadius: BorderRadius.circular(w * 0.04),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.darkPrimary.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
                 ),
-              ),
-              SizedBox(height: size.height * 0.015),
-
-              /// 📦 SESSION LIST
-              ...data.materialSessions.map((session) {
-                final createdAt = session.createdAt;
-                final statusColor = _statusColor(session.status);
-
-                return Container(
-                  margin: EdgeInsets.only(bottom: size.height * 0.015),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(w * 0.02),
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(18),
-                    boxShadow: const [
+                    shape: BoxShape.circle,
+                    boxShadow: [
                       BoxShadow(
-                        color: Colors.black12,
+                        color: Colors.black.withOpacity(0.1),
                         blurRadius: 8,
                       ),
                     ],
                   ),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(18),
-                    onTap: () {
-                      Get.toNamed(
-                        RouteHelper.getPatientMaterialSessionDetails(
-                          session.materialSessionId,
-                          controller.patientId,
-                        ),
-                      );
-                    },
-                    child: Padding(
-                      padding: EdgeInsets.all(size.width * 0.045),
-                      child: Row(
-                        children: [
-                          /// STATUS ICON
-                          CircleAvatar(
-                            radius: size.width * 0.055,
-                            backgroundColor:
-                            statusColor.withOpacity(0.15),
-                            child: Icon(
-                              Icons.medical_services,
-                              color: statusColor,
-                            ),
-                          ),
-
-                          SizedBox(width: size.width * 0.04),
-
-                          /// TEXT
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment:
-                              CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  'Dialysis Kit',
-                                  style: TextStyle(
-                                    fontSize:
-                                    size.width * 0.045,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                SizedBox(height: 4),
-                                if (createdAt != null)
-                                  Text(
-                                    _formatDate(
-                                        createdAt.toLocal()),
-                                    style: TextStyle(
-                                      fontSize:
-                                      size.width * 0.036,
-                                      color: Colors.grey[600],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          ),
-
-                          /// STATUS CHIP
-                          Container(
-                            padding: EdgeInsets.symmetric(
-                              horizontal: size.width * 0.03,
-                              vertical: size.height * 0.006,
-                            ),
-                            decoration: BoxDecoration(
-                              color:
-                              statusColor.withOpacity(0.15),
-                              borderRadius:
-                              BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              session.status.capitalizeFirst!,
-                              style: TextStyle(
-                                fontSize:
-                                size.width * 0.034,
-                                color: statusColor,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ),
-
-                          SizedBox(width: size.width * 0.02),
-                          const Icon(Icons.chevron_right),
-                        ],
-                      ),
+                  child: CircleAvatar(
+                    radius: w * 0.07,
+                    backgroundColor: AppColors.lightPrimary,
+                    child: Icon(
+                      Icons.person,
+                      size: w * 0.08,
+                      color: AppColors.darkPrimary,
                     ),
                   ),
-                );
-              }),
+                ),
+                SizedBox(width: w * 0.04),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Hello, ${patient.name}',
+                        style: TextStyle(
+                          fontSize: w * 0.055,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: h * 0.004),
+                      Text(
+                        patient.email,
+                        style: TextStyle(
+                          fontSize: w * 0.038,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: h * 0.035),
+
+          // ================= HEADER =================
+          Text(
+            'My Dialysis Kits',
+            style: TextStyle(
+              fontSize: w * 0.055,
+              fontWeight: FontWeight.bold,
+              color: AppColors.black,
+            ),
+          ),
+          SizedBox(height: h * 0.015),
+
+          // ================= SESSION LIST =================
+          ...data.materialSessions.map((session) {
+            final createdAt = session.createdAt;
+            final statusColor = _statusColor(session.status);
+
+            return Container(
+              margin: EdgeInsets.only(bottom: h * 0.018),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(w * 0.04),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(w * 0.04),
+                onTap: () async {
+                  await controller.fetchMaterialSessionDetails(
+                    session.materialSessionId,
+                  );
+
+                  final ms = controller.materialSessionDetails.value;
+
+                  if (ms != null) {
+                    Get.to(
+                          () => MaterialSessionDetailsPage(
+                        sessionId: ms.materialSessionId,
+                        patientId: patientId,
+                      ),
+                    );
+                  }
+                },
+                child: Padding(
+                  padding: EdgeInsets.all(w * 0.045),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: EdgeInsets.all(w * 0.03),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.12),
+                          shape: BoxShape.circle,
+                        ),
+                        child: Icon(
+                          Icons.medical_services,
+                          color: statusColor,
+                          size: w * 0.06,
+                        ),
+                      ),
+                      SizedBox(width: w * 0.04),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Dialysis Kit',
+                              style: TextStyle(
+                                fontSize: w * 0.045,
+                                fontWeight: FontWeight.w600,
+                                color: AppColors.black,
+                              ),
+                            ),
+                            SizedBox(height: h * 0.004),
+                            if (createdAt != null)
+                              Text(
+                                _formatDate(createdAt.toLocal()),
+                                style: TextStyle(
+                                  fontSize: w * 0.036,
+                                  color: AppColors.darkGrey,
+                                ),
+                              ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: w * 0.03,
+                          vertical: h * 0.006,
+                        ),
+                        decoration: BoxDecoration(
+                          color: statusColor.withOpacity(0.12),
+                          borderRadius: BorderRadius.circular(w * 0.05),
+                        ),
+                        child: Text(
+                          _capitalizeFirst(session.status),
+                          style: TextStyle(
+                            fontSize: w * 0.034,
+                            color: statusColor,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                      SizedBox(width: w * 0.02),
+                      Icon(
+                        Icons.chevron_right,
+                        color: AppColors.mediumGrey,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            );
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildLecturesTab(
+      BuildContext context,
+      double w,
+      double h,
+      dynamic patient,
+      ) {
+    // TODO: Replace with actual data from controller
+    final lectures = _getDummyLectures();
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(w * 0.05),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ================= WELCOME BANNER =================
+          Container(
+            padding: EdgeInsets.all(w * 0.05),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  AppColors.darkPrimary,
+                  AppColors.darkPrimary.withOpacity(0.85),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(w * 0.04),
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.darkPrimary.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.video_library,
+                  color: Colors.white,
+                  size: w * 0.12,
+                ),
+                SizedBox(width: w * 0.04),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Educational Resources',
+                        style: TextStyle(
+                          fontSize: w * 0.05,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: h * 0.005),
+                      Text(
+                        'Learn about your dialysis care',
+                        style: TextStyle(
+                          fontSize: w * 0.038,
+                          color: Colors.white.withOpacity(0.9),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: h * 0.03),
+
+          // ================= CONTENT SECTIONS =================
+          _buildContentSection(
+            context,
+            w,
+            h,
+            'Videos',
+            Icons.play_circle_outline,
+            lectures['videos']!,
+            AppStatusColors.info,
+          ),
+
+          SizedBox(height: h * 0.025),
+
+          _buildContentSection(
+            context,
+            w,
+            h,
+            'Documents',
+            Icons.picture_as_pdf,
+            lectures['pdfs']!,
+            AppStatusColors.error,
+          ),
+
+          SizedBox(height: h * 0.025),
+
+          _buildContentSection(
+            context,
+            w,
+            h,
+            'Images',
+            Icons.image,
+            lectures['images']!,
+            AppStatusColors.success,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContentSection(
+      BuildContext context,
+      double w,
+      double h,
+      String title,
+      IconData icon,
+      List<Map<String, String>> items,
+      Color accentColor,
+      ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Icon(icon, color: accentColor, size: w * 0.06),
+            SizedBox(width: w * 0.02),
+            Text(
+              title,
+              style: TextStyle(
+                fontSize: w * 0.05,
+                fontWeight: FontWeight.bold,
+                color: AppColors.black,
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '${items.length} items',
+              style: TextStyle(
+                fontSize: w * 0.036,
+                color: AppColors.darkGrey,
+              ),
+            ),
+          ],
+        ),
+        SizedBox(height: h * 0.015),
+        ...items.map((item) => _buildContentCard(
+          context,
+          w,
+          h,
+          item,
+          icon,
+          accentColor,
+        )),
+      ],
+    );
+  }
+
+  Widget _buildContentCard(
+      BuildContext context,
+      double w,
+      double h,
+      Map<String, String> item,
+      IconData icon,
+      Color accentColor,
+      ) {
+    return Container(
+      margin: EdgeInsets.only(bottom: h * 0.015),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(w * 0.04),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.06),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(w * 0.04),
+        onTap: () {
+          // TODO: Open video player, PDF viewer, or image viewer
+          _openContent(context, item, icon);
+        },
+        child: Padding(
+          padding: EdgeInsets.all(w * 0.04),
+          child: Row(
+            children: [
+              Container(
+                width: w * 0.15,
+                height: w * 0.15,
+                decoration: BoxDecoration(
+                  color: accentColor.withOpacity(0.12),
+                  borderRadius: BorderRadius.circular(w * 0.03),
+                ),
+                child: Icon(
+                  icon,
+                  color: accentColor,
+                  size: w * 0.08,
+                ),
+              ),
+              SizedBox(width: w * 0.04),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item['title']!,
+                      style: TextStyle(
+                        fontSize: w * 0.042,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.black,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    SizedBox(height: h * 0.005),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.person_outline,
+                          size: w * 0.035,
+                          color: AppColors.darkGrey,
+                        ),
+                        SizedBox(width: w * 0.01),
+                        Flexible(
+                          child: Text(
+                            item['doctor']!,
+                            style: TextStyle(
+                              fontSize: w * 0.033,
+                              color: AppColors.darkGrey,
+                            ),
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: h * 0.003),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: w * 0.035,
+                          color: AppColors.darkGrey,
+                        ),
+                        SizedBox(width: w * 0.01),
+                        Text(
+                          item['date']!,
+                          style: TextStyle(
+                            fontSize: w * 0.033,
+                            color: AppColors.darkGrey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.chevron_right,
+                color: AppColors.mediumGrey,
+              ),
             ],
           ),
-        );
-      }),
+        ),
+      ),
+    );
+  }
+
+  void _openContent(
+      BuildContext context,
+      Map<String, String> item,
+      IconData icon,
+      ) {
+    if (icon == Icons.play_circle_outline) {
+      // Open YouTube video in browser
+      _launchURL(item['url']!);
+    } else if (icon == Icons.picture_as_pdf) {
+      // Open PDF in browser
+      _launchURL(item['url']!);
+    } else if (icon == Icons.image) {
+      // Open image viewer
+      Get.to(() => ImageViewerScreen(
+        title: item['title']!,
+        imageUrl: item['url']!,
+      ));
+    }
+  }
+
+  void _launchURL(String url) async {
+    final uri = Uri.parse(url);
+    // For now, show a message. In production, use url_launcher package
+    Get.snackbar(
+      'Opening Content',
+      'This will open in your browser',
+      snackPosition: SnackPosition.BOTTOM,
+      backgroundColor: AppColors.darkPrimary,
+      colorText: Colors.white,
+      duration: const Duration(seconds: 2),
+    );
+    // TODO: Uncomment when url_launcher is added
+    // if (await canLaunchUrl(uri)) {
+    //   await launchUrl(uri, mode: LaunchMode.externalApplication);
+    // }
+  }
+
+  Map<String, List<Map<String, String>>> _getDummyLectures() {
+    return {
+      'videos': [
+        {
+          'title': 'Introduction to Peritoneal Dialysis',
+          'doctor': 'Dr. Sarah Johnson',
+          'date': '15 Dec 2024',
+          'url': 'https://www.youtube.com/watch?v=dQw4w9WgXcQ',
+          'type': 'youtube',
+        },
+        {
+          'title': 'Managing Your Diet During Dialysis',
+          'doctor': 'Dr. Michael Chen',
+          'date': '12 Dec 2024',
+          'url': 'https://www.youtube.com/watch?v=jNQXAC9IVRw',
+          'type': 'youtube',
+        },
+        {
+          'title': 'Home Dialysis Best Practices',
+          'doctor': 'Dr. Emily Rodriguez',
+          'date': '08 Dec 2024',
+          'url': 'https://www.youtube.com/watch?v=9bZkp7q19f0',
+          'type': 'youtube',
+        },
+      ],
+      'pdfs': [
+        {
+          'title': 'Dialysis Patient Care Guidelines',
+          'doctor': 'Dr. Robert Smith',
+          'date': '18 Dec 2024',
+          'url': 'https://www.w3.org/WAI/ER/tests/xhtml/testfiles/resources/pdf/dummy.pdf',
+          'type': 'pdf',
+        },
+        {
+          'title': 'Medication Schedule and Instructions',
+          'doctor': 'Dr. Sarah Johnson',
+          'date': '14 Dec 2024',
+          'url': 'https://www.africau.edu/images/default/sample.pdf',
+          'type': 'pdf',
+        },
+      ],
+      'images': [
+        {
+          'title': 'Dialysis Equipment Setup Diagram',
+          'doctor': 'Dr. Michael Chen',
+          'date': '16 Dec 2024',
+          'url': 'https://picsum.photos/800/600?random=1',
+          'type': 'image',
+        },
+        {
+          'title': 'Catheter Care Instructions',
+          'doctor': 'Dr. Emily Rodriguez',
+          'date': '10 Dec 2024',
+          'url': 'https://picsum.photos/800/600?random=2',
+          'type': 'image',
+        },
+      ],
+    };
+  }
+}
+
+// ================= IMAGE VIEWER SCREEN =================
+class ImageViewerScreen extends StatelessWidget {
+  final String title;
+  final String imageUrl;
+
+  const ImageViewerScreen({
+    super.key,
+    required this.title,
+    required this.imageUrl,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.black,
+      appBar: AppBar(
+        backgroundColor: AppColors.darkPrimary,
+        title: Text(
+          title,
+          style: const TextStyle(color: AppColors.white),
+        ),
+        iconTheme: const IconThemeData(color: AppColors.white),
+      ),
+      body: Center(
+        child: InteractiveViewer(
+          minScale: 0.5,
+          maxScale: 4.0,
+          child: Image.network(
+            imageUrl,
+            fit: BoxFit.contain,
+            loadingBuilder: (context, child, progress) {
+              if (progress == null) return child;
+              return const CircularProgressIndicator(
+                color: AppColors.white,
+              );
+            },
+            errorBuilder: (context, error, stackTrace) {
+              return const Icon(
+                Icons.error_outline,
+                color: Colors.white,
+                size: 64,
+              );
+            },
+          ),
+        ),
+      ),
     );
   }
 }

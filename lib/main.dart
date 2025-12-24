@@ -30,8 +30,11 @@ class _MyAppState extends State<MyApp> {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
+      theme: ThemeData(
+        fontFamily: "Poppins",
+      ),
       debugShowCheckedModeBanner: false,
-      title: 'Doczappoint',
+      title: 'Digital Dailysis',
       initialRoute: RouteHelper.getSplashPage(),
       getPages: RouteHelper.routes,
     );

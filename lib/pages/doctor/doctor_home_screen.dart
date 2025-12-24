@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:digitaldailysis/controllers/doctor_controller.dart';
 import 'package:digitaldailysis/routes/route_helper.dart';
+import 'package:digitaldailysis/utils/colors.dart';
 
 class DoctorHomePage extends StatefulWidget {
   final String doctorId;
@@ -20,40 +21,51 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
     super.initState();
     doctorController = Get.find<DoctorController>();
 
-    // ✅ Safe to call here
-    Future.delayed(Duration.zero, () {
+    Future.microtask(() {
       doctorController.fetchPatients(widget.doctorId);
     });
   }
 
   @override
   Widget build(BuildContext context) {
-    final size = MediaQuery.of(context).size;
+    final mq = MediaQuery.of(context);
+    final w = mq.size.width;
+    final h = mq.size.height;
 
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.white,
+
       appBar: AppBar(
-        title: const Text(
-          "My Patients",
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
         centerTitle: true,
-        backgroundColor: Colors.blue[700],
+        backgroundColor: AppColors.darkPrimary,
+        title: Text(
+          "My Patients",
+          style: TextStyle(
+            fontSize: w * 0.05,
+            fontWeight: FontWeight.bold,
+            color: AppColors.white,
+          ),
+        ),
       ),
+
       floatingActionButton: FloatingActionButton(
+        backgroundColor: AppColors.darkPrimary,
         onPressed: () async {
           final result = await Get.toNamed(
             RouteHelper.getRegisterPatientScreen(widget.doctorId),
           );
 
           if (result == true) {
-            // ✅ Refresh after successful registration
             doctorController.fetchPatients(widget.doctorId);
           }
         },
-        backgroundColor: Colors.blue[700],
-        child: const Icon(Icons.person_add, color: Colors.white),
+        child: Icon(
+          Icons.person_add,
+          color: AppColors.white,
+          size: w * 0.065,
+        ),
       ),
+
       body: GetBuilder<DoctorController>(
         builder: (controller) {
           if (controller.isLoading) {
@@ -61,70 +73,84 @@ class _DoctorHomePageState extends State<DoctorHomePage> {
           }
 
           if (controller.patients.isEmpty) {
-            return const Center(
+            return Center(
               child: Text(
                 "No patients found",
-                style: TextStyle(fontSize: 16, color: Colors.grey),
+                style: TextStyle(
+                  fontSize: w * 0.04,
+                  color: AppColors.darkGrey,
+                ),
               ),
             );
           }
 
           return Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: size.width * 0.05,
-              vertical: size.height * 0.02,
+              horizontal: w * 0.05,
+              vertical: h * 0.02,
             ),
             child: ListView.builder(
               itemCount: controller.patients.length,
               itemBuilder: (context, index) {
                 final patient = controller.patients[index];
+
                 return Container(
-                  margin: EdgeInsets.only(bottom: size.height * 0.02),
+                  margin: EdgeInsets.only(bottom: h * 0.02),
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(w * 0.04),
                     boxShadow: [
                       BoxShadow(
-                        color: Colors.grey.shade300,
-                        blurRadius: 8,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 4),
+                        color: AppColors.mediumGrey.withOpacity(0.3),
+                        blurRadius: w * 0.02,
+                        offset: Offset(0, h * 0.005),
                       ),
                     ],
-                    borderRadius: BorderRadius.circular(16),
                   ),
-
-
                   child: ListTile(
-                    leading: CircleAvatar(
-                      backgroundColor: Colors.amberAccent.withOpacity(0.1),
-                      child: Icon(Icons.person, color:Colors.blue[700]!),
+                    contentPadding: EdgeInsets.symmetric(
+                      horizontal: w * 0.04,
+                      vertical: h * 0.01,
                     ),
+
+                    leading: CircleAvatar(
+                      radius: w * 0.07,
+                      backgroundColor: AppColors.darkPrimary,
+                      child: Icon(
+                        Icons.person,
+                        color: AppColors.lightPrimary,
+                        size: w * 0.07,
+                      ),
+                    ),
+
                     title: Text(
                       patient.name,
                       style: TextStyle(
-                        fontSize: size.width * 0.045,
+                        fontSize: w * 0.045,
                         fontWeight: FontWeight.w600,
+                        color: AppColors.black,
                       ),
                     ),
+
                     subtitle: Text(
                       patient.email,
                       style: TextStyle(
-                        fontSize: size.width * 0.035,
-                        color: Colors.grey[700],
+                        fontSize: w * 0.035,
+                        color: AppColors.darkGrey,
                       ),
                     ),
+
                     trailing: Icon(
                       Icons.arrow_forward_ios,
-                      color:Colors.blue[700],
-                      size: size.width * 0.04,
+                      size: w * 0.04,
+                      color: AppColors.darkPrimary,
                     ),
+
                     onTap: () {
-                      // navigate by named route (recommended)
                       Get.toNamed(
-                        RouteHelper.getPatientInfoScreen(
-                            patient.id),
+                        RouteHelper.getPatientInfoScreen(patient.id),
                       );
-                    }
+                    },
                   ),
                 );
               },

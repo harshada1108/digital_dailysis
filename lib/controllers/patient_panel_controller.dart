@@ -17,6 +17,9 @@ class PatientPanelController extends GetxController  implements GetxService {
 
   RxBool isLoading = false.obs;
   RxString errorMsg = "".obs;
+  // Single material session details (for detail screen)
+  Rxn<MaterialSession> materialSessionDetails = Rxn<MaterialSession>();
+
 
   // Use the model you already have
   Rxn<PatientInfoResponse> summary = Rxn<PatientInfoResponse>();
@@ -131,7 +134,7 @@ class PatientPanelController extends GetxController  implements GetxService {
 
       if (response.statusCode == 200) {
         print("Complete successfully");
-        customSnackBar("Dialysis Completed Successfully", isError: false);
+        //customSnackBar("Dialysis Completed Successfully", isError: false);
         return true;
       } else {
         print("Eroorrrr");
@@ -172,4 +175,43 @@ class PatientPanelController extends GetxController  implements GetxService {
       return false;
     }
   }
+
+  /// Fetch single material session details (PATIENT SIDE)
+  Future<void> fetchMaterialSessionDetails(String materialSessionId) async {
+    try {
+      isLoading(true);
+      errorMsg('');
+
+      final uri =
+          '${apiClient.appBaseUrl}/api/upload/material/session-details';
+
+      final http.Response res = await apiClient.postData(
+        uri,
+        {
+          "materialSessionId": materialSessionId,
+        },
+      );
+
+      if (res.statusCode == 200) {
+        final Map<String, dynamic> body = jsonDecode(res.body);
+
+        if (body['success'] == true && body['materialSession'] != null) {
+          materialSessionDetails.value =
+              MaterialSession.fromJson(body['materialSession']);
+        } else {
+          errorMsg('No material session found');
+        }
+      } else {
+        errorMsg('Failed: ${res.statusCode}');
+        print(
+            'fetchMaterialSessionDetails error ${res.statusCode}: ${res.body}');
+      }
+    } catch (e) {
+      errorMsg(e.toString());
+      print('fetchMaterialSessionDetails exception: $e');
+    } finally {
+      isLoading(false);
+    }
+  }
+
 }

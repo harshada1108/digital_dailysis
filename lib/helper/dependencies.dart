@@ -1,6 +1,7 @@
 
 
 import 'package:digitaldailysis/controllers/Patient_info_controller.dart';
+import 'package:digitaldailysis/controllers/doctor_material_controller.dart';
 import 'package:digitaldailysis/controllers/patient_panel_controller.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
@@ -34,6 +35,11 @@ Future<void> init() async {
 
 
 
+
   // Controllers
   Get.put(DoctorController(doctorRepo: Get.find()));
+  Get.lazyPut(
+        () => DoctorMaterialController(apiClient: Get.find()),
+  );
+
 }

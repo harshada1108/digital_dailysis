@@ -1,9 +1,15 @@
+import 'package:digitaldailysis/routes/route_helper.dart';
+import 'package:digitaldailysis/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import '../../controllers/patient_panel_controller.dart';
 import 'day_details_page.dart';
 
-class MaterialSessionDetailsPage extends StatelessWidget {
+// Add these status colors to your AppColors class
+
+
+class MaterialSessionDetailsPage extends StatefulWidget {
   final String sessionId;
   final String patientId;
 
@@ -14,23 +20,86 @@ class MaterialSessionDetailsPage extends StatelessWidget {
   });
 
   @override
+  State<MaterialSessionDetailsPage> createState() => _MaterialSessionDetailsPageState();
+}
+
+class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage> {
+  @override
+  void initState() {
+    super.initState();
+    // Fetch fresh data when page loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final controller = Get.find<PatientPanelController>(tag: widget.patientId);
+      controller.fetchMaterialSessionDetails(widget.sessionId);
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.find<PatientPanelController>(tag: patientId);
+    final controller = Get.find<PatientPanelController>(tag: widget.patientId);
     final screenWidth = MediaQuery.of(context).size.width;
     final screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
+      backgroundColor: AppColors.lightPrimary,
       appBar: AppBar(
-        title: const Text("Material Session Details"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          color: AppColors.white,
+          onPressed: () {
+            Get.offNamed(
+              RouteHelper.getPatientHomeScreen(widget.patientId),
+            );
+          },
+        ),
+        title: const Text(
+          "Material Session Details",
+          style: TextStyle(color: AppColors.white, fontWeight: FontWeight.w600),
+        ),
+        backgroundColor: AppColors.darkPrimary,
         elevation: 0,
       ),
       body: Obx(() {
         if (controller.isLoading.value) {
-          return Center(child: CircularProgressIndicator());
+          return Center(
+            child: CircularProgressIndicator(
+              color: AppColors.darkPrimary,
+            ),
+          );
         }
 
-        final session = controller.summary.value!.materialSessions
-            .firstWhere((s) => s.materialSessionId == sessionId);
+        final session = controller.materialSessionDetails.value;
+
+        if (session == null) {
+          return Center(
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.error_outline, size: 64, color: AppStatusColors.error),
+                SizedBox(height: 16),
+                Text(
+                  "Session not found",
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.045,
+                    color: AppColors.black,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                SizedBox(height: 16),
+                ElevatedButton(
+                  onPressed: () {
+                    controller.fetchSummary();
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.darkPrimary,
+                    foregroundColor: AppColors.white,
+                  ),
+                  child: Text("Refresh"),
+                ),
+              ],
+            ),
+          );
+        }
 
         final stats = _calculateStats(session);
 
@@ -45,7 +114,7 @@ class MaterialSessionDetailsPage extends StatelessWidget {
                 _buildMaterialImagesSection(session.materialImages, screenWidth),
               _buildDaysSection(session, controller, screenWidth),
               if (session.status != "acknowledged")
-                _buildAcknowledgeButton(context, controller, sessionId, screenWidth, screenHeight),
+                _buildAcknowledgeButton(context, controller, widget.sessionId, screenWidth, screenHeight),
               SizedBox(height: screenWidth * 0.04),
             ],
           ),
@@ -61,18 +130,18 @@ class MaterialSessionDetailsPage extends StatelessWidget {
 
     switch (session.status) {
       case "acknowledged":
-        statusColor = Colors.green;
+        statusColor = AppStatusColors.verified;
         statusIcon = Icons.check_circle;
         statusText = "Materials Acknowledged";
         break;
       case "active":
-        statusColor = Colors.blue;
+        statusColor = AppStatusColors.info;
         statusIcon = Icons.pending;
         statusText = "Session Active";
         break;
       default:
-        statusColor = Colors.orange;
-        statusIcon = Icons.warning;
+        statusColor = AppStatusColors.warning;
+        statusIcon = Icons.warning_amber_rounded;
         statusText = "Awaiting Acknowledgment";
     }
 
@@ -81,7 +150,7 @@ class MaterialSessionDetailsPage extends StatelessWidget {
       padding: EdgeInsets.all(screenWidth * 0.05),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [statusColor, statusColor.withOpacity(0.7)],
+          colors: [AppColors.darkPrimary, AppColors.darkPrimary.withOpacity(0.8)],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -89,34 +158,75 @@ class MaterialSessionDetailsPage extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Icon(statusIcon, color: Colors.white, size: screenWidth * 0.08),
-              SizedBox(width: screenWidth * 0.03),
-              Expanded(
-                child: Text(
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.04,
+              vertical: screenWidth * 0.02,
+            ),
+            decoration: BoxDecoration(
+              color: statusColor.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(screenWidth * 0.06),
+              border: Border.all(color: statusColor.withOpacity(0.5), width: 1.5),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(statusIcon, color: statusColor, size: screenWidth * 0.055),
+                SizedBox(width: screenWidth * 0.02),
+                Text(
                   statusText,
                   style: TextStyle(
-                    color: Colors.white,
-                    fontSize: screenWidth * 0.05,
-                    fontWeight: FontWeight.bold,
+                    color: AppColors.white,
+                    fontSize: screenWidth * 0.04,
+                    fontWeight: FontWeight.w600,
                   ),
                 ),
-              ),
-            ],
-          ),
-          SizedBox(height: screenWidth * 0.02),
-          Text(
-            "Created: ${_formatDate(session.createdAt)}",
-            style: TextStyle(color: Colors.white70, fontSize: screenWidth * 0.035),
-          ),
-          if (session.acknowledgedAt != null)
-            Text(
-              "Acknowledged: ${_formatDate(session.acknowledgedAt)}",
-              style: TextStyle(color: Colors.white70, fontSize: screenWidth * 0.035),
+              ],
             ),
+          ),
+          SizedBox(height: screenWidth * 0.04),
+          _buildInfoRow(
+            Icons.calendar_today,
+            "Created",
+            _formatDate(session.createdAt),
+            screenWidth,
+          ),
+          if (session.acknowledgedAt != null) ...[
+            SizedBox(height: screenWidth * 0.02),
+            _buildInfoRow(
+              Icons.check_circle_outline,
+              "Acknowledged",
+              _formatDate(session.acknowledgedAt),
+              screenWidth,
+            ),
+          ],
         ],
       ),
+    );
+  }
+
+  Widget _buildInfoRow(IconData icon, String label, String value, double screenWidth) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.white.withOpacity(0.8), size: screenWidth * 0.045),
+        SizedBox(width: screenWidth * 0.02),
+        Text(
+          "$label: ",
+          style: TextStyle(
+            color: AppColors.white.withOpacity(0.9),
+            fontSize: screenWidth * 0.035,
+            fontWeight: FontWeight.w500,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            color: AppColors.white,
+            fontSize: screenWidth * 0.035,
+            fontWeight: FontWeight.w400,
+          ),
+        ),
+      ],
     );
   }
 
@@ -124,19 +234,34 @@ class MaterialSessionDetailsPage extends StatelessWidget {
     return Container(
       margin: EdgeInsets.all(screenWidth * 0.04),
       child: Card(
-        elevation: 4,
+        elevation: 3,
+        color: AppColors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+        ),
         child: Padding(
-          padding: EdgeInsets.all(screenWidth * 0.04),
+          padding: EdgeInsets.all(screenWidth * 0.045),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.bar_chart, color: Colors.blue, size: screenWidth * 0.06),
-                  SizedBox(width: screenWidth * 0.02),
+                  Container(
+                    padding: EdgeInsets.all(screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkPrimary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    ),
+                    child: Icon(Icons.bar_chart, color: AppColors.darkPrimary, size: screenWidth * 0.06),
+                  ),
+                  SizedBox(width: screenWidth * 0.03),
                   Text(
                     "Session Statistics",
-                    style: TextStyle(fontSize: screenWidth * 0.045, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.048,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                    ),
                   ),
                 ],
               ),
@@ -148,17 +273,17 @@ class MaterialSessionDetailsPage extends StatelessWidget {
                       "Total Days",
                       "${stats['total']}",
                       Icons.calendar_today,
-                      Colors.blue,
+                      AppColors.darkPrimary,
                       screenWidth,
                     ),
                   ),
-                  SizedBox(width: screenWidth * 0.02),
+                  SizedBox(width: screenWidth * 0.03),
                   Expanded(
                     child: _buildStatItem(
                       "Completed",
                       "${stats['completed']}",
                       Icons.check_circle,
-                      Colors.green,
+                      AppStatusColors.verified,
                       screenWidth,
                     ),
                   ),
@@ -172,33 +297,40 @@ class MaterialSessionDetailsPage extends StatelessWidget {
                       "Active",
                       "${stats['active']}",
                       Icons.pending,
-                      Colors.orange,
+                      AppStatusColors.active,
                       screenWidth,
                     ),
                   ),
-                  SizedBox(width: screenWidth * 0.02),
+                  SizedBox(width: screenWidth * 0.03),
                   Expanded(
                     child: _buildStatItem(
                       "Pending",
                       "${stats['pending']}",
                       Icons.hourglass_empty,
-                      Colors.grey,
+                      AppStatusColors.pending,
                       screenWidth,
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: screenWidth * 0.03),
-              LinearProgressIndicator(
-                value: stats['total'] > 0 ? stats['completed'] / stats['total'] : 0,
-                backgroundColor: Colors.grey[200],
-                valueColor: AlwaysStoppedAnimation<Color>(Colors.green),
-                minHeight: screenWidth * 0.02,
+              SizedBox(height: screenWidth * 0.04),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                child: LinearProgressIndicator(
+                  value: stats['total'] > 0 ? stats['completed'] / stats['total'] : 0,
+                  backgroundColor: AppColors.lightGrey,
+                  valueColor: AlwaysStoppedAnimation<Color>(AppStatusColors.verified),
+                  minHeight: screenWidth * 0.025,
+                ),
               ),
-              SizedBox(height: screenWidth * 0.02),
+              SizedBox(height: screenWidth * 0.025),
               Text(
-                "Progress: ${stats['total'] > 0 ? ((stats['completed'] / stats['total']) * 100).toStringAsFixed(0) : 0}%",
-                style: TextStyle(fontSize: screenWidth * 0.035, color: Colors.grey[600]),
+                "Progress: ${stats['total'] > 0 ? ((stats['completed'] / stats['total']) * 100).toStringAsFixed(0) : 0}% Complete",
+                style: TextStyle(
+                  fontSize: screenWidth * 0.037,
+                  color: AppColors.darkGrey,
+                  fontWeight: FontWeight.w500,
+                ),
               ),
             ],
           ),
@@ -209,26 +341,32 @@ class MaterialSessionDetailsPage extends StatelessWidget {
 
   Widget _buildStatItem(String label, String value, IconData icon, Color color, double screenWidth) {
     return Container(
-      padding: EdgeInsets.all(screenWidth * 0.03),
+      padding: EdgeInsets.all(screenWidth * 0.035),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(screenWidth * 0.02),
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
       ),
       child: Column(
         children: [
-          Icon(icon, color: color, size: screenWidth * 0.07),
+          Icon(icon, color: color, size: screenWidth * 0.08),
           SizedBox(height: screenWidth * 0.02),
           Text(
             value,
             style: TextStyle(
-              fontSize: screenWidth * 0.06,
+              fontSize: screenWidth * 0.07,
               fontWeight: FontWeight.bold,
               color: color,
             ),
           ),
+          SizedBox(height: screenWidth * 0.01),
           Text(
             label,
-            style: TextStyle(fontSize: screenWidth * 0.03, color: Colors.grey[600]),
+            style: TextStyle(
+              fontSize: screenWidth * 0.032,
+              color: AppColors.darkGrey,
+              fontWeight: FontWeight.w500,
+            ),
             textAlign: TextAlign.center,
           ),
         ],
@@ -241,48 +379,63 @@ class MaterialSessionDetailsPage extends StatelessWidget {
     return Container(
       margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
       child: Card(
-        elevation: 2,
+        elevation: 3,
+        color: AppColors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+        ),
         child: Padding(
-          padding: EdgeInsets.all(screenWidth * 0.04),
+          padding: EdgeInsets.all(screenWidth * 0.045),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.medical_services, color: Colors.blue, size: screenWidth * 0.06),
-                  SizedBox(width: screenWidth * 0.02),
+                  Container(
+                    padding: EdgeInsets.all(screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkPrimary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    ),
+                    child: Icon(Icons.medical_services, color: AppColors.darkPrimary, size: screenWidth * 0.06),
+                  ),
+                  SizedBox(width: screenWidth * 0.03),
                   Expanded(
                     child: Text(
                       "Materials Provided",
-                      style: TextStyle(fontSize: screenWidth * 0.045, fontWeight: FontWeight.bold),
+                      style: TextStyle(
+                        fontSize: screenWidth * 0.048,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.black,
+                      ),
                     ),
                   ),
                 ],
               ),
-              SizedBox(height: screenWidth * 0.03),
+              SizedBox(height: screenWidth * 0.04),
               _buildMaterialChip(
                 "Dialysis Machine",
                 materials.dialysisMachine.toUpperCase(),
-                Colors.blue,
+                AppColors.darkPrimary,
                 screenWidth,
               ),
-              SizedBox(height: screenWidth * 0.02),
+              SizedBox(height: screenWidth * 0.03),
               Wrap(
-                spacing: screenWidth * 0.02,
-                runSpacing: screenWidth * 0.02,
+                spacing: screenWidth * 0.025,
+                runSpacing: screenWidth * 0.025,
                 children: [
                   if (materials.dialyzer)
-                    _buildMaterialChip("Dialyzer", "✓", Colors.green, screenWidth),
+                    _buildMaterialChip("Dialyzer", "✓", AppStatusColors.verified, screenWidth),
                   if (materials.bloodTubingSets)
-                    _buildMaterialChip("Blood Tubing Sets", "✓", Colors.green, screenWidth),
+                    _buildMaterialChip("Blood Tubing Sets", "✓", AppStatusColors.verified, screenWidth),
                   if (materials.dialysisNeedles)
-                    _buildMaterialChip("Dialysis Needles", "✓", Colors.green, screenWidth),
+                    _buildMaterialChip("Dialysis Needles", "✓", AppStatusColors.verified, screenWidth),
                   if (materials.dialysateConcentrates)
-                    _buildMaterialChip("Dialysate Concentrates", "✓", Colors.green, screenWidth),
+                    _buildMaterialChip("Dialysate Concentrates", "✓", AppStatusColors.verified, screenWidth),
                   if (materials.heparin)
-                    _buildMaterialChip("Heparin", "✓", Colors.green, screenWidth),
+                    _buildMaterialChip("Heparin", "✓", AppStatusColors.verified, screenWidth),
                   if (materials.salineSolution)
-                    _buildMaterialChip("Saline Solution", "✓", Colors.green, screenWidth),
+                    _buildMaterialChip("Saline Solution", "✓", AppStatusColors.verified, screenWidth),
                 ],
               ),
             ],
@@ -295,39 +448,46 @@ class MaterialSessionDetailsPage extends StatelessWidget {
   Widget _buildMaterialChip(String label, String value, Color color, double screenWidth) {
     return Container(
       padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.03,
-        vertical: screenWidth * 0.02,
+        horizontal: screenWidth * 0.035,
+        vertical: screenWidth * 0.025,
       ),
       decoration: BoxDecoration(
         color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(screenWidth * 0.05),
-        border: Border.all(color: color.withOpacity(0.3)),
+        borderRadius: BorderRadius.circular(screenWidth * 0.06),
+        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
+          if (value == "✓")
+            Icon(Icons.check_circle, color: color, size: screenWidth * 0.045),
+          if (value == "✓") SizedBox(width: screenWidth * 0.015),
           Flexible(
             child: Text(
               label,
-              style: TextStyle(fontSize: screenWidth * 0.035, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: screenWidth * 0.036,
+                fontWeight: FontWeight.w600,
+                color: AppColors.black,
+              ),
             ),
           ),
           if (value != "✓") ...[
-            SizedBox(width: screenWidth * 0.02),
+            SizedBox(width: screenWidth * 0.025),
             Container(
               padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.02,
-                vertical: screenWidth * 0.005,
+                horizontal: screenWidth * 0.025,
+                vertical: screenWidth * 0.008,
               ),
               decoration: BoxDecoration(
                 color: color,
-                borderRadius: BorderRadius.circular(screenWidth * 0.025),
+                borderRadius: BorderRadius.circular(screenWidth * 0.03),
               ),
               child: Text(
                 value,
                 style: TextStyle(
-                  color: Colors.white,
-                  fontSize: screenWidth * 0.03,
+                  color: AppColors.white,
+                  fontSize: screenWidth * 0.032,
                   fontWeight: FontWeight.bold,
                 ),
               ),
@@ -342,30 +502,45 @@ class MaterialSessionDetailsPage extends StatelessWidget {
     return Container(
       margin: EdgeInsets.all(screenWidth * 0.04),
       child: Card(
-        elevation: 2,
+        elevation: 3,
+        color: AppColors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+        ),
         child: Padding(
-          padding: EdgeInsets.all(screenWidth * 0.04),
+          padding: EdgeInsets.all(screenWidth * 0.045),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.photo_library, color: Colors.blue, size: screenWidth * 0.06),
-                  SizedBox(width: screenWidth * 0.02),
+                  Container(
+                    padding: EdgeInsets.all(screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkPrimary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    ),
+                    child: Icon(Icons.photo_library, color: AppColors.darkPrimary, size: screenWidth * 0.06),
+                  ),
+                  SizedBox(width: screenWidth * 0.03),
                   Text(
                     "Material Images",
-                    style: TextStyle(fontSize: screenWidth * 0.045, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.048,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                    ),
                   ),
                 ],
               ),
-              SizedBox(height: screenWidth * 0.03),
+              SizedBox(height: screenWidth * 0.04),
               GridView.builder(
                 shrinkWrap: true,
                 physics: NeverScrollableScrollPhysics(),
                 gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 3,
-                  crossAxisSpacing: screenWidth * 0.02,
-                  mainAxisSpacing: screenWidth * 0.02,
+                  crossAxisSpacing: screenWidth * 0.025,
+                  mainAxisSpacing: screenWidth * 0.025,
                 ),
                 itemCount: images.length,
                 itemBuilder: (context, index) {
@@ -375,24 +550,39 @@ class MaterialSessionDetailsPage extends StatelessWidget {
                   if (imageUrl.isEmpty) {
                     return Container(
                       decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                        color: AppColors.lightGrey,
+                        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                        border: Border.all(color: AppColors.mediumGrey.withOpacity(0.3)),
                       ),
-                      child: Icon(Icons.image_not_supported, size: screenWidth * 0.08),
+                      child: Icon(
+                        Icons.image_not_supported,
+                        size: screenWidth * 0.08,
+                        color: AppColors.mediumGrey,
+                      ),
                     );
                   }
 
                   return ClipRRect(
-                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
-                    child: Image.network(
-                      imageUrl,
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.grey[300],
-                          child: Icon(Icons.broken_image, size: screenWidth * 0.08),
-                        );
-                      },
+                    borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                    child: Container(
+                      decoration: BoxDecoration(
+                        border: Border.all(color: AppColors.lightGrey, width: 2),
+                        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+                      ),
+                      child: Image.network(
+                        imageUrl,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: AppColors.lightGrey,
+                            child: Icon(
+                              Icons.broken_image,
+                              size: screenWidth * 0.08,
+                              color: AppColors.mediumGrey,
+                            ),
+                          );
+                        },
+                      ),
                     ),
                   );
                 },
@@ -408,23 +598,38 @@ class MaterialSessionDetailsPage extends StatelessWidget {
     return Container(
       margin: EdgeInsets.all(screenWidth * 0.04),
       child: Card(
-        elevation: 2,
+        elevation: 3,
+        color: AppColors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(screenWidth * 0.04),
+        ),
         child: Padding(
-          padding: EdgeInsets.all(screenWidth * 0.04),
+          padding: EdgeInsets.all(screenWidth * 0.045),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
-                  Icon(Icons.event_note, color: Colors.blue, size: screenWidth * 0.06),
-                  SizedBox(width: screenWidth * 0.02),
+                  Container(
+                    padding: EdgeInsets.all(screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkPrimary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    ),
+                    child: Icon(Icons.event_note, color: AppColors.darkPrimary, size: screenWidth * 0.06),
+                  ),
+                  SizedBox(width: screenWidth * 0.03),
                   Text(
                     "Dialysis Days",
-                    style: TextStyle(fontSize: screenWidth * 0.045, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.048,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                    ),
                   ),
                 ],
               ),
-              SizedBox(height: screenWidth * 0.03),
+              SizedBox(height: screenWidth * 0.04),
               ...session.days.map<Widget>((day) {
                 final canStart = _canStartDay(session, day.dayNumber);
                 return _buildDayTile(session, day, canStart, screenWidth);
@@ -438,63 +643,87 @@ class MaterialSessionDetailsPage extends StatelessWidget {
 
   Widget _buildDayTile(dynamic session, dynamic day, bool canStart, double screenWidth) {
     Color statusColor;
+    Color bgColor;
     IconData statusIcon;
     String statusText;
 
     switch (day.status) {
-      case "completed":
-        statusColor = Colors.green;
-        statusIcon = Icons.check_circle;
+      case "verified":
+        statusColor = AppStatusColors.verified;
+        bgColor = AppStatusColors.verified.withOpacity(0.1);
+        statusIcon = Icons.verified;
         statusText = "Completed & Verified";
         break;
+      case "completed":
+        statusColor = AppStatusColors.info;
+        bgColor = AppStatusColors.info.withOpacity(0.1);
+        statusIcon = Icons.check_circle;
+        statusText = "Awaiting Doctor Verification";
+        break;
       case "active":
-        statusColor = Colors.orange;
+        statusColor = AppStatusColors.active;
+        bgColor = AppStatusColors.active.withOpacity(0.1);
         statusIcon = Icons.pending;
-        statusText = "Awaiting Verification";
+        statusText = "Dialysis Started";
         break;
       default:
-        statusColor = Colors.grey;
-        statusIcon = Icons.hourglass_empty;
+        statusColor = canStart ? AppColors.darkPrimary : AppStatusColors.locked;
+        bgColor = canStart ? AppColors.darkPrimary.withOpacity(0.08) : AppStatusColors.locked.withOpacity(0.08);
+        statusIcon = canStart ? Icons.play_circle_outline : Icons.lock;
         statusText = canStart ? "Ready to Start" : "Locked";
     }
 
     return Container(
       margin: EdgeInsets.only(bottom: screenWidth * 0.03),
       child: InkWell(
-        onTap: () {
+        onTap: () async {
           if (session.status == "acknowledged") {
-            Get.to(
+            await Get.to(
                   () => DayDetailsPage(
                 materialSessionId: session.materialSessionId,
                 dayNumber: day.dayNumber,
-                patientId: patientId,
+                patientId: widget.patientId,
               ),
             );
+            // Refresh data when coming back
+            final controller = Get.find<PatientPanelController>(tag: widget.patientId);
+            controller.fetchMaterialSessionDetails(widget.sessionId);
           }
         },
-        borderRadius: BorderRadius.circular(screenWidth * 0.03),
+        borderRadius: BorderRadius.circular(screenWidth * 0.04),
         child: Container(
           padding: EdgeInsets.all(screenWidth * 0.04),
           decoration: BoxDecoration(
-            color: statusColor.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(screenWidth * 0.03),
-            border: Border.all(color: statusColor.withOpacity(0.3), width: 2),
+            color: bgColor,
+            borderRadius: BorderRadius.circular(screenWidth * 0.04),
+            border: Border.all(color: statusColor.withOpacity(0.4), width: 2),
           ),
           child: Row(
             children: [
               Container(
-                width: screenWidth * 0.12,
-                height: screenWidth * 0.12,
+                width: screenWidth * 0.14,
+                height: screenWidth * 0.14,
                 decoration: BoxDecoration(
-                  color: statusColor,
+                  gradient: LinearGradient(
+                    colors: [statusColor, statusColor.withOpacity(0.8)],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
                   shape: BoxShape.circle,
+                  boxShadow: [
+                    BoxShadow(
+                      color: statusColor.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Center(
                   child: Text(
                     "${day.dayNumber}",
                     style: TextStyle(
-                      color: Colors.white,
-                      fontSize: screenWidth * 0.05,
+                      color: AppColors.white,
+                      fontSize: screenWidth * 0.055,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -508,22 +737,23 @@ class MaterialSessionDetailsPage extends StatelessWidget {
                     Text(
                       "Day ${day.dayNumber}",
                       style: TextStyle(
-                        fontSize: screenWidth * 0.04,
+                        fontSize: screenWidth * 0.045,
                         fontWeight: FontWeight.bold,
+                        color: AppColors.black,
                       ),
                     ),
-                    SizedBox(height: screenWidth * 0.01),
+                    SizedBox(height: screenWidth * 0.015),
                     Row(
                       children: [
-                        Icon(statusIcon, size: screenWidth * 0.04, color: statusColor),
-                        SizedBox(width: screenWidth * 0.01),
+                        Icon(statusIcon, size: screenWidth * 0.042, color: statusColor),
+                        SizedBox(width: screenWidth * 0.015),
                         Flexible(
                           child: Text(
                             statusText,
                             style: TextStyle(
-                              fontSize: screenWidth * 0.035,
+                              fontSize: screenWidth * 0.036,
                               color: statusColor,
-                              fontWeight: FontWeight.w500,
+                              fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
@@ -532,12 +762,19 @@ class MaterialSessionDetailsPage extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                session.status == "acknowledged"
-                    ? Icons.arrow_forward_ios
-                    : Icons.lock,
-                color: statusColor,
-                size: screenWidth * 0.05,
+              Container(
+                padding: EdgeInsets.all(screenWidth * 0.02),
+                decoration: BoxDecoration(
+                  color: statusColor.withOpacity(0.15),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  session.status == "acknowledged"
+                      ? Icons.arrow_forward_ios
+                      : Icons.lock_outline,
+                  color: statusColor,
+                  size: screenWidth * 0.045,
+                ),
               ),
             ],
           ),
@@ -556,17 +793,37 @@ class MaterialSessionDetailsPage extends StatelessWidget {
         onPressed: () async {
           final confirm = await Get.dialog<bool>(
             AlertDialog(
-              title: Text("Acknowledge Materials"),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(screenWidth * 0.04),
+              ),
+              title: Text(
+                "Acknowledge Materials",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.black,
+                ),
+              ),
               content: Text(
                 "Have you received and verified all the materials for this session?",
+                style: TextStyle(color: AppColors.darkGrey),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Get.back(result: false),
-                  child: Text("Cancel"),
+                  child: Text(
+                    "Cancel",
+                    style: TextStyle(color: AppColors.mediumGrey),
+                  ),
                 ),
                 ElevatedButton(
                   onPressed: () => Get.back(result: true),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.darkPrimary,
+                    foregroundColor: AppColors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                    ),
+                  ),
                   child: Text("Confirm"),
                 ),
               ],
@@ -576,22 +833,35 @@ class MaterialSessionDetailsPage extends StatelessWidget {
           if (confirm == true) {
             final ok = await controller.acknowledgeSession(sessionId);
             if (ok) {
-              Get.back();
+              // Refresh the session details after acknowledgment
+              await controller.fetchMaterialSessionDetails(widget.sessionId);
               Get.snackbar(
                 "Success",
                 "Materials Acknowledged Successfully",
                 snackPosition: SnackPosition.BOTTOM,
-                backgroundColor: Colors.green,
-                colorText: Colors.white,
+                backgroundColor: AppStatusColors.verified,
+                colorText: AppColors.white,
+                icon: Icon(Icons.check_circle, color: AppColors.white),
               );
             }
           }
         },
-        icon: Icon(Icons.check),
-        label: Text("Acknowledge Materials"),
+        icon: Icon(Icons.check_circle, size: screenWidth * 0.055),
+        label: Text(
+          "Acknowledge Materials",
+          style: TextStyle(
+            fontSize: screenWidth * 0.042,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         style: ElevatedButton.styleFrom(
-          padding: EdgeInsets.symmetric(vertical: screenHeight * 0.02),
-          textStyle: TextStyle(fontSize: screenWidth * 0.04, fontWeight: FontWeight.bold),
+          backgroundColor: AppColors.darkPrimary,
+          foregroundColor: AppColors.white,
+          padding: EdgeInsets.symmetric(vertical: screenHeight * 0.022),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          ),
+          elevation: 4,
         ),
       ),
     );
@@ -599,7 +869,7 @@ class MaterialSessionDetailsPage extends StatelessWidget {
 
   Map<String, dynamic> _calculateStats(dynamic session) {
     int total = session.days.length;
-    int completed = session.days.where((d) => d.status == "completed").length;
+    int completed = session.days.where((d) => d.status == "verified").length;
     int active = session.days.where((d) => d.status == "active").length;
     int pending = session.days.where((d) => d.status == "pending").length;
 
@@ -635,7 +905,9 @@ class MaterialSessionDetailsPage extends StatelessWidget {
       } else {
         return 'N/A';
       }
-      return "${date.day}/${date.month}/${date.year} ${date.hour}:${date.minute.toString().padLeft(2, '0')}";
+
+      // Format: Dec 24, 2025 at 2:30 PM
+      return DateFormat('MMM dd, yyyy \'at\' h:mm a').format(date);
     } catch (e) {
       return dateValue.toString();
     }

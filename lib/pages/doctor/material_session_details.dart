@@ -1,143 +1,280 @@
 // lib/pages/doctor/material_session_details.dart
 
+
+import 'package:digitaldailysis/controllers/doctor_material_controller.dart';
+import 'package:digitaldailysis/controllers/patient_info_controller.dart';
+import 'package:digitaldailysis/pages/doctor/doc_day_detail_page.dart';
+import 'package:digitaldailysis/utils/colors.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:digitaldailysis/models/patient/patient_info_model.dart';
+import 'package:intl/intl.dart';
+
+
 
 class MaterialSessionDetailScreen extends StatelessWidget {
-  final MaterialSession materialSession;
-  const MaterialSessionDetailScreen({Key? key, required this.materialSession}) : super(key: key);
+
+  final patientId;
+  const MaterialSessionDetailScreen({super.key ,  required this.patientId});
+
+
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.find<PatientInfoController>();
     final mq = MediaQuery.of(context);
     final w = mq.size.width;
     final h = mq.size.height;
-    final created = materialSession.createdAt?.toLocal();
 
-    Color statusColor = _getStatusColor(materialSession.status);
-    IconData statusIcon = _getStatusIcon(materialSession.status);
 
-    return Scaffold(
-      backgroundColor: Colors.grey[50],
-      body: CustomScrollView(
+    return Obx(() {
+      final materialSession = controller.materialSessionDetails.value;
+
+      if (materialSession == null) {
+        return const Scaffold(
+          body: Center(child: CircularProgressIndicator()),
+        );
+      }
+
+
+      return Scaffold(
+        backgroundColor: AppColors.lightGrey,
+        body: _buildBody(context, materialSession, w, h),
+      );
+    });
+  }
+
+
+
+
+  // ================= SMALL UI POLISH =================
+      Widget _buildBody(
+      BuildContext context,
+      var materialSession,
+      double w,
+      double h,
+    ) {
+    final statusColor = _getStatusColor(materialSession.status);
+    final statusIcon = _getStatusIcon(materialSession.status);
+
+
+    return CustomScrollView(
+
         slivers: [
-          // Beautiful gradient app bar
+          // ================= HEADER =================
           SliverAppBar(
-            expandedHeight: h * 0.22,
-            floating: false,
             pinned: true,
+            expandedHeight: h * 0.24,
+            backgroundColor: statusColor,
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
+                padding: EdgeInsets.all(w * 0.05),
+                alignment: Alignment.bottomLeft,
                 decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                    colors: [statusColor.withOpacity(0.8), statusColor],
-                  ),
+                  color: AppColors.darkGrey,
                 ),
-                child: SafeArea(
-                  child: Padding(
-                    padding: EdgeInsets.all(w * 0.05),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(w * 0.035),
-                              decoration: BoxDecoration(
-                                color: Colors.white.withOpacity(0.25),
-                                borderRadius: BorderRadius.circular(w * 0.03),
-                              ),
-                              child: Icon(statusIcon, color: Colors.white, size: w * 0.08),
-                            ),
-                            SizedBox(width: w * 0.03),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Session',
-                                    style: TextStyle(
-                                      fontSize: w * 0.04,
-                                      color: Colors.white.withOpacity(0.9),
-                                      fontWeight: FontWeight.w500,
-                                    ),
-                                  ),
-
-                                  SizedBox(height: h * 0.005),
-                                  Container(
-                                    padding: EdgeInsets.symmetric(horizontal: w * 0.025, vertical: h * 0.005),
-                                    decoration: BoxDecoration(
-                                      color: Colors.white.withOpacity(0.3),
-                                      borderRadius: BorderRadius.circular(w * 0.02),
-                                    ),
-                                    child: Text(
-                                      materialSession.status.toUpperCase(),
-                                      style: TextStyle(
-                                        fontSize: w * 0.032,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                        letterSpacing: 0.5,
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(w * 0.035),
+                      decoration: BoxDecoration(
+                        color: AppColors.darkPrimary,
+                        borderRadius: BorderRadius.circular(w * 0.035),
+                      ),
+                      child: Icon(
+                        statusIcon,
+                        color: Colors.white,
+                        size: w * 0.085,
+                      ),
                     ),
-                  ),
+                    SizedBox(width: w * 0.04),
+                    Expanded(
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'Dialysis Session',
+                            style: TextStyle(
+                              fontSize: w * 0.04,
+                              color: Colors.white.withOpacity(0.9),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          SizedBox(height: h * 0.008),
+                          Container(
+                            padding: EdgeInsets.symmetric(
+                              horizontal: w * 0.03,
+                              vertical: h * 0.005,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.25),
+                              borderRadius: BorderRadius.circular(w * 0.04),
+                            ),
+                            child: Text(
+                              materialSession.status.toUpperCase(),
+                              style: TextStyle(
+                                fontSize: w * 0.032,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
           ),
 
-          // Content
+          // ================= BODY =================
           SliverToBoxAdapter(
             child: Padding(
-              padding: EdgeInsets.all(w * 0.04),
+              padding: EdgeInsets.all(w * 0.045),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Session Info Cards
+                  // ---------- META CARDS ----------
                   Row(
                     children: [
-                      Expanded(child: _buildInfoCard('Created', created != null ? '${created.day}/${created.month}/${created.year}\n${created.hour}:${created.minute.toString().padLeft(2, '0')}' : 'N/A', Icons.calendar_today, Colors.blue, w, h)),
+                      Expanded(
+                        child: _buildDateCard(
+                          'Created',
+                          materialSession.createdAt,
+                          Icons.event_available,
+                          Colors.blue, // kept
+                          w,
+                          h,
+                        ),
+                      ),
                       SizedBox(width: w * 0.03),
-                      Expanded(child: _buildInfoCard('Planned', '${materialSession.plannedSessions}\nSessions', Icons.event_repeat, Colors.purple, w, h)),
+                      Expanded(
+                        child: _buildInfoCard(
+                          'Sessions',
+                          '${materialSession.plannedSessions}',
+                          Icons.repeat,
+                          Colors.purple, // kept
+                          w,
+                          h,
+                        ),
+                      ),
                     ],
                   ),
 
-                  SizedBox(height: h * 0.025),
+                  SizedBox(height: h * 0.03),
 
-                  // Materials Section
-                  _buildSectionHeader('Medical Materials', Icons.medical_services, Colors.green, w, h),
+                  // ---------- PROGRESS ----------
+                  _buildProgressCard(w, h,materialSession),
+
+                  SizedBox(height: h * 0.035),
+
+                  // ---------- MATERIALS ----------
+                  _buildSectionTitle(
+                    'Medical Materials',
+                    Icons.medical_services,
+                    Colors.green,
+                    w,
+                  ),
                   SizedBox(height: h * 0.015),
-                  _buildMaterialsCard(w, h),
+                  _buildMaterialsCard(w, h, materialSession),
 
-                  SizedBox(height: h * 0.025),
+                  SizedBox(height: h * 0.035),
 
-                  // Images Section
+                  // ---------- IMAGES ----------
                   if (materialSession.materialImages.isNotEmpty) ...[
-                    _buildSectionHeader('Session Images', Icons.photo_library, Colors.orange, w, h),
+                    _buildSectionTitle(
+                      'Session Images',
+                      Icons.photo_library,
+                      Colors.orange,
+                      w,
+                    ),
                     SizedBox(height: h * 0.015),
-                    _buildImagesSection(w, h),
-                    SizedBox(height: h * 0.025),
+                    _buildImagesSection(w, h, materialSession),
+                    SizedBox(height: h * 0.035),
                   ],
 
-                  // Days Section
-                  _buildSectionHeader('Treatment Days', Icons.view_day, Colors.indigo, w, h),
+                  // ---------- DAYS ----------
+                  _buildSectionTitle(
+                    'Treatment Days',
+                    Icons.calendar_month,
+                    Colors.indigo,
+                    w,
+                  ),
                   SizedBox(height: h * 0.015),
-                  ...materialSession.days.map((d) => _buildDayCard(d, w, h)).toList(),
+                  ...materialSession.days.map(
+                        (d) => _buildDayCard(d, d.dayNumber - 1, w, h,materialSession),
+                  ),
 
-                  SizedBox(height: h * 0.02),
+                  SizedBox(height: h * 0.03),
                 ],
               ),
+            ),
+          ),
+        ],
+      );
+    }
+  Widget _buildDateCard(
+      String label,
+      DateTime? date,
+      IconData icon,
+      Color color,
+      double w,
+      double h,
+      ) {
+    final formatted = date != null
+        ? _formatDateBeautiful(date)
+        : 'Not Available';
+
+    return Container(
+      padding: EdgeInsets.all(w * 0.04),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.white, color.withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(w * 0.04),
+        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
+        boxShadow: [
+          BoxShadow(
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: EdgeInsets.all(w * 0.025),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(w * 0.02),
+            ),
+            child: Icon(icon, color: color, size: w * 0.06),
+          ),
+          SizedBox(height: h * 0.015),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: w * 0.032,
+              color: Colors.grey[600],
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+          SizedBox(height: h * 0.005),
+          Text(
+            formatted,
+            style: TextStyle(
+              fontSize: w * 0.036,
+              fontWeight: FontWeight.bold,
+              color: Colors.grey[800],
+              height: 1.3,
             ),
           ),
         ],
@@ -145,17 +282,50 @@ class MaterialSessionDetailScreen extends StatelessWidget {
     );
   }
 
+  Widget _buildSectionTitle(
+      String title, IconData icon, Color color, double w) {
+    return Row(
+      children: [
+        Container(
+          padding: EdgeInsets.all(w * 0.025),
+          decoration: BoxDecoration(
+            color: color.withOpacity(0.15),
+            borderRadius: BorderRadius.circular(w * 0.03),
+          ),
+          child: Icon(icon, color: color, size: w * 0.055),
+        ),
+        SizedBox(width: w * 0.025),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: w * 0.05,
+            fontWeight: FontWeight.bold,
+            color: AppColors.black,
+          ),
+        ),
+      ],
+    );
+  }
+
+
+
+
   Widget _buildInfoCard(String label, String value, IconData icon, Color color, double w, double h) {
     return Container(
       padding: EdgeInsets.all(w * 0.04),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: [Colors.white, color.withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(w * 0.04),
+        border: Border.all(color: color.withOpacity(0.2), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: color.withOpacity(0.15),
-            blurRadius: 10,
-            offset: Offset(0, 4),
+            color: color.withOpacity(0.1),
+            blurRadius: 8,
+            offset: Offset(0, 3),
           ),
         ],
       ),
@@ -165,11 +335,11 @@ class MaterialSessionDetailScreen extends StatelessWidget {
             padding: EdgeInsets.all(w * 0.025),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(w * 0.025),
+              borderRadius: BorderRadius.circular(w * 0.02),
             ),
-            child: Icon(icon, color: color, size: w * 0.065),
+            child: Icon(icon, color: color, size: w * 0.06),
           ),
-          SizedBox(height: h * 0.012),
+          SizedBox(height: h * 0.015),
           Text(
             label,
             style: TextStyle(
@@ -183,10 +353,9 @@ class MaterialSessionDetailScreen extends StatelessWidget {
             value,
             textAlign: TextAlign.center,
             style: TextStyle(
-              fontSize: w * 0.038,
+              fontSize: w * 0.045,
               fontWeight: FontWeight.bold,
               color: Colors.grey[800],
-              height: 1.3,
             ),
           ),
         ],
@@ -194,92 +363,219 @@ class MaterialSessionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildSectionHeader(String title, IconData icon, Color color, double w, double h) {
-    return Row(
-      children: [
-        Container(
-          padding: EdgeInsets.all(w * 0.02),
-          decoration: BoxDecoration(
-            color: color.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(w * 0.02),
-          ),
-          child: Icon(icon, color: color, size: w * 0.055),
+  Widget _buildProgressCard(double w, double h , var materialSession) {
+
+    final total = materialSession.days.length;
+    final verified = materialSession.days.where((d) => d.status.toLowerCase() == 'verified').length;
+    final completed = materialSession.days.where((d) => d.status.toLowerCase() == 'completed').length;
+    final progress = total > 0 ? verified / total : 0.0;
+
+    return Container(
+      padding: EdgeInsets.all(w * 0.05),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [Colors.blue.withOpacity(0.05), Colors.purple.withOpacity(0.05)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
         ),
-        SizedBox(width: w * 0.025),
+        borderRadius: BorderRadius.circular(w * 0.04),
+        border: Border.all(color: Colors.blue.withOpacity(0.2), width: 1.5),
+      ),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                'Session Progress',
+                style: TextStyle(
+                  fontSize: w * 0.042,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.grey[800],
+                ),
+              ),
+              Text(
+                '${(progress * 100).toStringAsFixed(0)}%',
+                style: TextStyle(
+                  fontSize: w * 0.05,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: h * 0.015),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(w * 0.02),
+            child: LinearProgressIndicator(
+              value: progress,
+              backgroundColor: Colors.grey[200],
+              valueColor: AlwaysStoppedAnimation<Color>(Colors.blue),
+              minHeight: h * 0.012,
+            ),
+          ),
+          SizedBox(height: h * 0.02),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _buildProgressStat('Total', total, Colors.blue, w),
+              _buildProgressStat('Verified', verified, Colors.green, w),
+              _buildProgressStat('Completed', completed, Colors.orange, w),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressStat(String label, int value, Color color, double w) {
+    return Column(
+      children: [
         Text(
-          title,
+          '$value',
           style: TextStyle(
-            fontSize: w * 0.048,
+            fontSize: w * 0.055,
             fontWeight: FontWeight.bold,
-            color: Colors.grey[800],
+            color: color,
+          ),
+        ),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: w * 0.032,
+            color: Colors.grey[600],
           ),
         ),
       ],
     );
   }
 
-  Widget _buildMaterialsCard(double w, double h) {
+  // Widget _buildSectionTitle(String title, IconData icon, Color color, double w) {
+  //   return Row(
+  //     children: [
+  //       Container(
+  //         padding: EdgeInsets.all(w * 0.025),
+  //         decoration: BoxDecoration(
+  //           gradient: LinearGradient(
+  //             colors: [color.withOpacity(0.2), color.withOpacity(0.1)],
+  //           ),
+  //           borderRadius: BorderRadius.circular(w * 0.025),
+  //         ),
+  //         child: Icon(icon, color: color, size: w * 0.06),
+  //       ),
+  //       SizedBox(width: w * 0.025),
+  //       Text(
+  //         title,
+  //         style: TextStyle(
+  //           fontSize: w * 0.048,
+  //           fontWeight: FontWeight.bold,
+  //           color: Colors.grey[800],
+  //         ),
+  //       ),
+  //     ],
+  //   );
+  // }
+
+  Widget _buildMaterialsCard(double w, double h , var materialSession) {
     final materials = materialSession.materials;
     final materialList = [
-      {'label': 'Machine: ${materials.dialysisMachine}', 'icon': Icons.precision_manufacturing, 'show': true},
+      {
+        'label': 'Dialysis Machine',
+        'value': materials.dialysisMachine.toUpperCase(),
+        'icon': Icons.precision_manufacturing,
+        'show': true
+      },
       {'label': 'Dialyzer', 'icon': Icons.filter_alt, 'show': materials.dialyzer},
       {'label': 'Blood Tubing Sets', 'icon': Icons.cable, 'show': materials.bloodTubingSets},
-      {'label': 'Dialysis Needles', 'icon': Icons.coronavirus, 'show': materials.dialysisNeedles},
+      {'label': 'Dialysis Needles', 'icon': Icons.coronavirus_outlined, 'show': materials.dialysisNeedles},
       {'label': 'Concentrates', 'icon': Icons.water_drop, 'show': materials.dialysateConcentrates},
       {'label': 'Heparin', 'icon': Icons.medication, 'show': materials.heparin},
       {'label': 'Saline Solution', 'icon': Icons.local_drink, 'show': materials.salineSolution},
     ].where((m) => m['show'] as bool).toList();
 
     return Container(
-      padding: EdgeInsets.all(w * 0.04),
+      padding: EdgeInsets.all(w * 0.045),
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(w * 0.04),
         boxShadow: [
           BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 8,
-            offset: Offset(0, 3),
+            color: Colors.green.withOpacity(0.08),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
         ],
       ),
       child: Column(
-        children: materialList.map((material) {
-          return Padding(
-            padding: EdgeInsets.symmetric(vertical: h * 0.01),
-            child: Row(
-              children: [
-                Container(
-                  padding: EdgeInsets.all(w * 0.022),
-                  decoration: BoxDecoration(
-                    color: Colors.green.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(w * 0.02),
+        children: materialList.asMap().entries.map((entry) {
+          final index = entry.key;
+          final material = entry.value;
+          return Column(
+            children: [
+              Container(
+                padding: EdgeInsets.all(w * 0.035),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.green.withOpacity(0.05), Colors.green.withOpacity(0.02)],
                   ),
-                  child: Icon(material['icon'] as IconData, color: Colors.green[700], size: w * 0.05),
+                  borderRadius: BorderRadius.circular(w * 0.03),
                 ),
-                SizedBox(width: w * 0.03),
-                Expanded(
-                  child: Text(
-                    material['label'] as String,
-                    style: TextStyle(
-                      fontSize: w * 0.038,
-                      color: Colors.grey[800],
-                      fontWeight: FontWeight.w500,
+                child: Row(
+                  children: [
+                    Container(
+                      padding: EdgeInsets.all(w * 0.025),
+                      decoration: BoxDecoration(
+                        color: Colors.green.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(w * 0.02),
+                      ),
+                      child: Icon(
+                        material['icon'] as IconData,
+                        color: Colors.green[700],
+                        size: w * 0.055,
+                      ),
                     ),
-                  ),
+                    SizedBox(width: w * 0.03),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            material['label'] as String,
+                            style: TextStyle(
+                              fontSize: w * 0.038,
+                              color: Colors.grey[800],
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                          if (material.containsKey('value')) ...[
+                            SizedBox(height: h * 0.003),
+                            Text(
+                              material['value'] as String,
+                              style: TextStyle(
+                                fontSize: w * 0.032,
+                                color: Colors.grey[600],
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Icon(Icons.check_circle, color: Colors.green[600], size: w * 0.055),
+                  ],
                 ),
-                Icon(Icons.check_circle, color: Colors.green[600], size: w * 0.05),
-              ],
-            ),
+              ),
+              if (index < materialList.length - 1) SizedBox(height: h * 0.01),
+            ],
           );
         }).toList(),
       ),
     );
   }
 
-  Widget _buildImagesSection(double w, double h) {
+  Widget _buildImagesSection(double w, double h, var materialSession) {
     return Container(
-      height: h * 0.2,
+      height: h * 0.22,
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: materialSession.materialImages.length,
@@ -287,43 +583,16 @@ class MaterialSessionDetailScreen extends StatelessWidget {
         itemBuilder: (_, i) {
           final img = materialSession.materialImages[i];
           return GestureDetector(
-            onTap: () {
-              Get.dialog(
-                Dialog(
-                  backgroundColor: Colors.transparent,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(w * 0.04),
-                        child: Image.network(img.imageUrl, fit: BoxFit.contain),
-                      ),
-                      SizedBox(height: h * 0.02),
-                      ElevatedButton.icon(
-                        onPressed: () => Get.back(),
-                        icon: Icon(Icons.close),
-                        label: Text('Close'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.white,
-                          foregroundColor: Colors.black87,
-                          padding: EdgeInsets.symmetric(horizontal: w * 0.06, vertical: h * 0.015),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(w * 0.06)),
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
-            },
+            onTap: () => _showImageDialog(img.imageUrl, i, w, h),
             child: Hero(
-              tag: 'image_$i',
+              tag: 'session_image_$i',
               child: Container(
-                width: w * 0.6,
+                width: w * 0.65,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(w * 0.04),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.grey.withOpacity(0.3),
+                      color: Colors.orange.withOpacity(0.2),
                       blurRadius: 10,
                       offset: Offset(0, 4),
                     ),
@@ -331,7 +600,33 @@ class MaterialSessionDetailScreen extends StatelessWidget {
                 ),
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(w * 0.04),
-                  child: Image.network(img.imageUrl, fit: BoxFit.cover),
+                  child: Stack(
+                    fit: StackFit.expand,
+                    children: [
+                      Image.network(img.imageUrl, fit: BoxFit.cover),
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [Colors.transparent, Colors.black.withOpacity(0.4)],
+                          ),
+                        ),
+                      ),
+                      Positioned(
+                        bottom: w * 0.03,
+                        right: w * 0.03,
+                        child: Container(
+                          padding: EdgeInsets.all(w * 0.02),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(w * 0.02),
+                          ),
+                          child: Icon(Icons.zoom_in, size: w * 0.05),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
@@ -341,18 +636,24 @@ class MaterialSessionDetailScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildDayCard(DayItem day, double w, double h) {
+  Widget _buildDayCard(DayItem day, int index, double w, double h, var materialSession) {
     Color dayStatusColor = _getStatusColor(day.status);
     IconData dayStatusIcon = _getStatusIcon(day.status);
+    final completedDate = day.completedAt != null ? _formatDateBeautiful(day.completedAt!) : null;
 
     return Container(
       margin: EdgeInsets.only(bottom: h * 0.015),
       decoration: BoxDecoration(
-        color: Colors.white,
+        gradient: LinearGradient(
+          colors: [Colors.white, dayStatusColor.withOpacity(0.03)],
+          begin: Alignment.centerLeft,
+          end: Alignment.centerRight,
+        ),
         borderRadius: BorderRadius.circular(w * 0.04),
+        border: Border.all(color: dayStatusColor.withOpacity(0.3), width: 1.5),
         boxShadow: [
           BoxShadow(
-            color: dayStatusColor.withOpacity(0.15),
+            color: dayStatusColor.withOpacity(0.1),
             blurRadius: 8,
             offset: Offset(0, 3),
           ),
@@ -361,20 +662,44 @@ class MaterialSessionDetailScreen extends StatelessWidget {
       child: Material(
         color: Colors.transparent,
         child: InkWell(
-          onTap: () => Get.dialog(DayDetailDialog(day: day)),
+          onTap: () async {
+            final result = await Get.to(
+                  () => DayDetailPage(day: day),
+            );
+
+            if (result == true) {
+              // re-fetch updated material session details
+              final controller = Get.find<PatientInfoController>();
+
+              await controller.fetchMaterialSessionDetailsByDoc(
+                materialSessionId: materialSession.materialSessionId,
+                patientId: patientId,
+              );
+            }
+          },
+
           borderRadius: BorderRadius.circular(w * 0.04),
           child: Padding(
             padding: EdgeInsets.all(w * 0.04),
             child: Row(
               children: [
                 Container(
-                  width: w * 0.14,
-                  height: w * 0.14,
+                  width: w * 0.16,
+                  height: w * 0.16,
                   decoration: BoxDecoration(
                     gradient: LinearGradient(
-                      colors: [dayStatusColor.withOpacity(0.2), dayStatusColor.withOpacity(0.1)],
+                      colors: [dayStatusColor, dayStatusColor.withOpacity(0.7)],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
                     ),
                     borderRadius: BorderRadius.circular(w * 0.03),
+                    boxShadow: [
+                      BoxShadow(
+                        color: dayStatusColor.withOpacity(0.3),
+                        blurRadius: 6,
+                        offset: Offset(0, 2),
+                      ),
+                    ],
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
@@ -382,9 +707,9 @@ class MaterialSessionDetailScreen extends StatelessWidget {
                       Text(
                         '${day.dayNumber}',
                         style: TextStyle(
-                          fontSize: w * 0.06,
+                          fontSize: w * 0.065,
                           fontWeight: FontWeight.bold,
-                          color: dayStatusColor,
+                          color: Colors.white,
                         ),
                       ),
                       Text(
@@ -392,60 +717,83 @@ class MaterialSessionDetailScreen extends StatelessWidget {
                         style: TextStyle(
                           fontSize: w * 0.025,
                           fontWeight: FontWeight.w600,
-                          color: dayStatusColor,
+                          color: Colors.white.withOpacity(0.9),
+                          letterSpacing: 1,
                         ),
                       ),
                     ],
                   ),
                 ),
-                SizedBox(width: w * 0.035),
+                SizedBox(width: w * 0.04),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'Day ${day.dayNumber}',
+                        'Treatment Day ${day.dayNumber}',
                         style: TextStyle(
-                          fontSize: w * 0.044,
+                          fontSize: w * 0.042,
                           fontWeight: FontWeight.bold,
                           color: Colors.grey[800],
                         ),
                       ),
-                      SizedBox(height: h * 0.005),
-                      Row(
-                        children: [
-                          Icon(dayStatusIcon, size: w * 0.038, color: dayStatusColor),
-                          SizedBox(width: w * 0.01),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: w * 0.02, vertical: h * 0.003),
-                            decoration: BoxDecoration(
-                              color: dayStatusColor.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(w * 0.015),
-                            ),
-                            child: Text(
-                              day.status,
+                      SizedBox(height: h * 0.008),
+                      Container(
+                        padding: EdgeInsets.symmetric(horizontal: w * 0.025, vertical: h * 0.005),
+                        decoration: BoxDecoration(
+                          color: dayStatusColor.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(w * 0.02),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(dayStatusIcon, size: w * 0.035, color: dayStatusColor),
+                            SizedBox(width: w * 0.015),
+                            Text(
+                              day.status.toUpperCase(),
                               style: TextStyle(
-                                fontSize: w * 0.032,
+                                fontSize: w * 0.03,
                                 color: dayStatusColor,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.bold,
+                                letterSpacing: 0.5,
                               ),
                             ),
-                          ),
-                          if (day.images.isNotEmpty) ...[
-                            SizedBox(width: w * 0.02),
-                            Icon(Icons.photo_camera, size: w * 0.038, color: Colors.grey[500]),
-                            SizedBox(width: w * 0.01),
+                          ],
+                        ),
+                      ),
+                      if (completedDate != null) ...[
+                        SizedBox(height: h * 0.008),
+                        Row(
+                          children: [
+                            Icon(Icons.calendar_today, size: w * 0.032, color: Colors.grey[600]),
+                            SizedBox(width: w * 0.015),
                             Text(
-                              '${day.images.length}',
+                              completedDate,
+                              style: TextStyle(
+                                fontSize: w * 0.032,
+                                color: Colors.grey[600],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                      if (day.images.isNotEmpty) ...[
+                        SizedBox(height: h * 0.005),
+                        Row(
+                          children: [
+                            Icon(Icons.photo_camera, size: w * 0.032, color: Colors.grey[600]),
+                            SizedBox(width: w * 0.015),
+                            Text(
+                              '${day.images.length} ${day.images.length == 1 ? 'photo' : 'photos'}',
                               style: TextStyle(fontSize: w * 0.032, color: Colors.grey[600]),
                             ),
                           ],
-                        ],
-                      ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
-                Icon(Icons.chevron_right, color: Colors.grey[400], size: w * 0.06),
+                Icon(Icons.arrow_forward_ios, color: dayStatusColor, size: w * 0.045),
               ],
             ),
           ),
@@ -454,387 +802,31 @@ class MaterialSessionDetailScreen extends StatelessWidget {
     );
   }
 
-  Color _getStatusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Colors.green;
-      case 'completed':
-        return Colors.blue;
-      case 'pending':
-        return Colors.orange;
-      case 'cancelled':
-        return Colors.red;
-      default:
-        return Colors.grey;
-    }
-  }
-
-  IconData _getStatusIcon(String status) {
-    switch (status.toLowerCase()) {
-      case 'active':
-        return Icons.play_circle;
-      case 'completed':
-        return Icons.check_circle;
-      case 'pending':
-        return Icons.schedule;
-      case 'cancelled':
-        return Icons.cancel;
-      default:
-        return Icons.info;
-    }
-  }
-}
-
-class DayDetailDialog extends StatelessWidget {
-  final DayItem day;
-  const DayDetailDialog({Key? key, required this.day}) : super(key: key);
-
-  @override
-  Widget build(BuildContext context) {
-    final mq = MediaQuery.of(context);
-    final w = mq.size.width;
-    final h = mq.size.height;
-
-    Color statusColor = _getStatusColor(day.status);
-
-    return Dialog(
-      backgroundColor: Colors.transparent,
-      child: Container(
-        constraints: BoxConstraints(maxHeight: h * 0.85),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(w * 0.06),
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
+  void _showImageDialog(String imageUrl, int index, double w, double h) {
+    Get.dialog(
+      Dialog(
+        backgroundColor: Colors.black87,
+        child: Stack(
           children: [
-            // Header with gradient
-            Container(
-              padding: EdgeInsets.all(w * 0.05),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [statusColor.withOpacity(0.8), statusColor],
+            Center(
+              child: InteractiveViewer(
+                child: Hero(
+                  tag: 'session_image_$index',
+                  child: Image.network(imageUrl, fit: BoxFit.contain),
                 ),
-                borderRadius: BorderRadius.only(
-                  topLeft: Radius.circular(w * 0.06),
-                  topRight: Radius.circular(w * 0.06),
-                ),
-              ),
-              child: Row(
-                children: [
-                  Container(
-                    width: w * 0.14,
-                    height: w * 0.14,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.25),
-                      borderRadius: BorderRadius.circular(w * 0.03),
-                    ),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Text(
-                          '${day.dayNumber}',
-                          style: TextStyle(
-                            fontSize: w * 0.065,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'DAY',
-                          style: TextStyle(
-                            fontSize: w * 0.026,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white.withOpacity(0.9),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  SizedBox(width: w * 0.035),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          'Day ${day.dayNumber}',
-                          style: TextStyle(
-                            fontSize: w * 0.052,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
-                          ),
-                        ),
-                        SizedBox(height: h * 0.005),
-                        Container(
-                          padding: EdgeInsets.symmetric(horizontal: w * 0.025, vertical: h * 0.004),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.25),
-                            borderRadius: BorderRadius.circular(w * 0.02),
-                          ),
-                          child: Text(
-                            day.status.toUpperCase(),
-                            style: TextStyle(
-                              fontSize: w * 0.03,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Container(
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(w * 0.02),
-                    ),
-                    child: IconButton(
-                      onPressed: () => Get.back(),
-                      icon: Icon(Icons.close, color: Colors.white, size: w * 0.065),
-                    ),
-                  ),
-                ],
               ),
             ),
-
-            // Content
-            Flexible(
-              child: SingleChildScrollView(
-                padding: EdgeInsets.all(w * 0.05),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Completion Info with beautiful design
-                    if (day.completedAt != null) ...[
-                      Container(
-                        padding: EdgeInsets.all(w * 0.04),
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [Colors.green.withOpacity(0.1), Colors.green.withOpacity(0.05)],
-                          ),
-                          borderRadius: BorderRadius.circular(w * 0.035),
-                          border: Border.all(color: Colors.green.withOpacity(0.3), width: 1.5),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              padding: EdgeInsets.all(w * 0.025),
-                              decoration: BoxDecoration(
-                                color: Colors.green.withOpacity(0.15),
-                                borderRadius: BorderRadius.circular(w * 0.02),
-                              ),
-                              child: Icon(Icons.check_circle, color: Colors.green[700], size: w * 0.06),
-                            ),
-                            SizedBox(width: w * 0.03),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    'Completed At',
-                                    style: TextStyle(
-                                      fontSize: w * 0.034,
-                                      color: Colors.green[700],
-                                      fontWeight: FontWeight.w600,
-                                    ),
-                                  ),
-                                  SizedBox(height: h * 0.004),
-                                  Text(
-                                    _formatDateTime(day.completedAt!),
-                                    style: TextStyle(
-                                      fontSize: w * 0.04,
-                                      fontWeight: FontWeight.bold,
-                                      color: Colors.grey[800],
-                                    ),
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      SizedBox(height: h * 0.025),
-                    ],
-
-                    // Treatment Parameters with beautiful design
-                    if (day.parameters != null && day.parameters!.isNotEmpty) ...[
-                      Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(w * 0.02),
-                            decoration: BoxDecoration(
-                              color: Colors.blue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(w * 0.02),
-                            ),
-                            child: Icon(Icons.analytics, color: Colors.blue[700], size: w * 0.055),
-                          ),
-                          SizedBox(width: w * 0.025),
-                          Text(
-                            'Treatment Parameters',
-                            style: TextStyle(
-                              fontSize: w * 0.048,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: h * 0.015),
-                      Container(
-                        padding: EdgeInsets.all(w * 0.045),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(w * 0.035),
-                          border: Border.all(color: Colors.blue.withOpacity(0.2), width: 1.5),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.blue.withOpacity(0.08),
-                              blurRadius: 8,
-                              offset: Offset(0, 3),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: _buildParametersList(day.parameters!, w, h),
-                        ),
-                      ),
-                      SizedBox(height: h * 0.025),
-                    ],
-
-                    // Images Section with beautiful grid
-                    if (day.images.isNotEmpty) ...[
-                      Row(
-                        children: [
-                          Container(
-                            padding: EdgeInsets.all(w * 0.02),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(w * 0.02),
-                            ),
-                            child: Icon(Icons.photo_library, color: Colors.orange[700], size: w * 0.055),
-                          ),
-                          SizedBox(width: w * 0.025),
-                          Text(
-                            'Session Images',
-                            style: TextStyle(
-                              fontSize: w * 0.048,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.grey[800],
-                            ),
-                          ),
-                          Spacer(),
-                          Container(
-                            padding: EdgeInsets.symmetric(horizontal: w * 0.025, vertical: h * 0.005),
-                            decoration: BoxDecoration(
-                              color: Colors.orange.withOpacity(0.15),
-                              borderRadius: BorderRadius.circular(w * 0.03),
-                            ),
-                            child: Text(
-                              '${day.images.length}',
-                              style: TextStyle(
-                                fontSize: w * 0.036,
-                                fontWeight: FontWeight.bold,
-                                color: Colors.orange[700],
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                      SizedBox(height: h * 0.015),
-                      GridView.builder(
-                        shrinkWrap: true,
-                        physics: NeverScrollableScrollPhysics(),
-                        gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          crossAxisSpacing: w * 0.03,
-                          mainAxisSpacing: h * 0.015,
-                          childAspectRatio: 1,
-                        ),
-                        itemCount: day.images.length,
-                        itemBuilder: (_, i) {
-                          return GestureDetector(
-                            onTap: () {
-                              Get.dialog(
-                                Dialog(
-                                  backgroundColor: Colors.black87,
-                                  child: Stack(
-                                    children: [
-                                      Center(
-                                        child: InteractiveViewer(
-                                          child: Image.network(day.images[i].imageUrl, fit: BoxFit.contain),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        top: h * 0.02,
-                                        right: w * 0.02,
-                                        child: Container(
-                                          decoration: BoxDecoration(
-                                            color: Colors.black54,
-                                            borderRadius: BorderRadius.circular(w * 0.06),
-                                          ),
-                                          child: IconButton(
-                                            onPressed: () => Get.back(),
-                                            icon: Icon(Icons.close, color: Colors.white, size: w * 0.07),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                            child: Hero(
-                              tag: 'day_image_${day.dayNumber}_$i',
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(w * 0.035),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: Colors.grey.withOpacity(0.3),
-                                      blurRadius: 8,
-                                      offset: Offset(0, 3),
-                                    ),
-                                  ],
-                                ),
-                                child: ClipRRect(
-                                  borderRadius: BorderRadius.circular(w * 0.035),
-                                  child: Stack(
-                                    fit: StackFit.expand,
-                                    children: [
-                                      Image.network(day.images[i].imageUrl, fit: BoxFit.cover),
-                                      Container(
-                                        decoration: BoxDecoration(
-                                          gradient: LinearGradient(
-                                            begin: Alignment.topCenter,
-                                            end: Alignment.bottomCenter,
-                                            colors: [Colors.transparent, Colors.black.withOpacity(0.3)],
-                                          ),
-                                        ),
-                                      ),
-                                      Positioned(
-                                        bottom: w * 0.02,
-                                        right: w * 0.02,
-                                        child: Container(
-                                          padding: EdgeInsets.all(w * 0.015),
-                                          decoration: BoxDecoration(
-                                            color: Colors.black.withOpacity(0.6),
-                                            borderRadius: BorderRadius.circular(w * 0.015),
-                                          ),
-                                          child: Icon(Icons.fullscreen, color: Colors.white, size: w * 0.04),
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              ),
-                            ),
-                          );
-                        },
-                      ),
-                    ],
-                  ],
+            Positioned(
+              top: h * 0.02,
+              right: w * 0.02,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  shape: BoxShape.circle,
+                ),
+                child: IconButton(
+                  onPressed: () => Get.back(),
+                  icon: Icon(Icons.close, color: Colors.black87),
                 ),
               ),
             ),
@@ -844,123 +836,46 @@ class DayDetailDialog extends StatelessWidget {
     );
   }
 
-  List<Widget> _buildParametersList(Map<String, dynamic> params, double w, double h) {
-    List<Widget> widgets = [];
-
-    // Parse and organize parameters beautifully
-    params.forEach((key, value) {
-      if (value is Map) {
-        // Nested parameters (like dialysis, voluntary)
-        widgets.add(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: w * 0.025, vertical: h * 0.006),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [Colors.blue.withOpacity(0.15), Colors.blue.withOpacity(0.08)],
-                  ),
-                  borderRadius: BorderRadius.circular(w * 0.015),
-                ),
-                child: Text(
-                  _formatParameterKey(key),
-                  style: TextStyle(
-                    fontSize: w * 0.038,
-                    fontWeight: FontWeight.bold,
-                    color: Colors.blue[800],
-                  ),
-                ),
-              ),
-              SizedBox(height: h * 0.01),
-              ...((value as Map).entries.map((e) => _buildParameterRow(e.key, e.value, w, h, isNested: true)).toList()),
-              SizedBox(height: h * 0.015),
-            ],
-          ),
-        );
-      } else {
-        widgets.add(_buildParameterRow(key, value, w, h));
-      }
-    });
-
-    return widgets;
-  }
-
-  Widget _buildParameterRow(String key, dynamic value, double w, double h, {bool isNested = false}) {
-    return Padding(
-      padding: EdgeInsets.only(
-        left: isNested ? w * 0.03 : 0,
-        bottom: h * 0.008,
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            margin: EdgeInsets.only(top: h * 0.004),
-            width: w * 0.015,
-            height: w * 0.015,
-            decoration: BoxDecoration(
-              color: Colors.blue[600],
-              shape: BoxShape.circle,
-            ),
-          ),
-          SizedBox(width: w * 0.02),
-          Expanded(
-            child: RichText(
-              text: TextSpan(
-                style: TextStyle(fontSize: w * 0.037, color: Colors.grey[800], height: 1.4),
-                children: [
-                  TextSpan(
-                    text: '${_formatParameterKey(key)}: ',
-                    style: TextStyle(fontWeight: FontWeight.w600, color: Colors.grey[700]),
-                  ),
-                  TextSpan(
-                    text: _formatParameterValue(value),
-                    style: TextStyle(color: Colors.grey[800]),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  String _formatParameterKey(String key) {
-    // Convert camelCase to readable format
-    return key
-        .replaceAllMapped(RegExp(r'([A-Z])'), (match) => ' ${match.group(0)}')
-        .trim()
-        .split(' ')
-        .map((word) => word[0].toUpperCase() + word.substring(1))
-        .join(' ');
-  }
-
-  String _formatParameterValue(dynamic value) {
-    if (value == null) return 'N/A';
-    if (value is bool) return value ? 'Yes' : 'No';
-    if (value is num) return value.toString();
-    return value.toString();
-  }
-
-  String _formatDateTime(DateTime dt) {
-    final local = dt.toLocal();
-    return '${local.day.toString().padLeft(2, '0')}/${local.month.toString().padLeft(2, '0')}/${local.year} ${local.hour.toString().padLeft(2, '0')}:${local.minute.toString().padLeft(2, '0')}';
+  String _formatDateBeautiful(DateTime date) {
+    final local = date.toLocal();
+    return DateFormat('d MMM yyyy, h:mm a').format(local);
   }
 
   Color _getStatusColor(String status) {
     switch (status.toLowerCase()) {
       case 'active':
-        return Colors.green;
+        return Colors.orangeAccent;
       case 'completed':
         return Colors.blue;
       case 'pending':
-        return Colors.orange;
+        return Colors.grey;
+      case 'verified':
+        return Colors.green;
       case 'cancelled':
         return Colors.red;
+      case 'acknowledged':
+        return Colors.teal;
       default:
         return Colors.grey;
+    }
+  }
+
+  IconData _getStatusIcon(String status) {
+    switch (status.toLowerCase()) {
+      case 'active':
+        return Icons.play_circle;
+      case 'verified':
+        return Icons.verified;
+      case 'completed':
+        return Icons.check_circle;
+      case 'pending':
+        return Icons.schedule;
+      case 'cancelled':
+        return Icons.cancel;
+      case 'acknowledged':
+        return Icons.done_all;
+      default:
+        return Icons.info;
     }
   }
 }

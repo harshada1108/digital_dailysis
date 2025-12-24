@@ -31,17 +31,29 @@ class DayDetailsPage extends StatelessWidget {
           return Center(child: CircularProgressIndicator());
         }
 
-        final session = controller.summary.value!.materialSessions
-            .firstWhere((s) => s.materialSessionId == materialSessionId);
-        final day = session.days.firstWhere((d) => d.dayNumber == dayNumber);
+        final session = controller.materialSessionDetails.value;
+        final day = session!.days.firstWhere((d) => d.dayNumber == dayNumber);
 
-        if (day.status == "pending") {
-          return _buildPendingView(context, session, day, screenWidth, screenHeight);
-        } else if (day.status == "active") {
-          return _buildActiveView(context, day, screenWidth);
-        } else {
-          return _buildCompletedView(context, day, screenWidth);
+        switch (day.status) {
+          case "pending":
+            return _buildPendingView(context, session, day, screenWidth, screenHeight);
+
+          case "active":
+          // 🔴 Dialysis not yet completed
+            return _buildActiveDialysisView(context, day, screenWidth);
+
+          case "completed":
+          // 🟡 Completed but NOT verified
+            return _buildCompletedUnverifiedView(context, day, screenWidth);
+
+          case "verified":
+          // 🟢 Completed + verified
+            return _buildCompletedVerifiedView(context, day, screenWidth);
+
+          default:
+            return Center(child: Text("Unknown status"));
         }
+
       }),
     );
   }
@@ -78,8 +90,9 @@ class DayDetailsPage extends StatelessWidget {
                       () => DayVoluntaryScreen(
                     materialSessionId: materialSessionId,
                     dayNumber: dayNumber,
+                     patientId: patientId,
                   ),
-                  arguments: patientId,
+
                 );
               }
                   : null,
@@ -99,7 +112,88 @@ class DayDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildActiveView(BuildContext context, dynamic day, double screenWidth) {
+  Widget _buildActiveDialysisView(
+      BuildContext context,
+      dynamic day,
+      double screenWidth,
+      ) {
+    final screenHeight = MediaQuery.of(context).size.height;
+
+    return Center(
+      child: Padding(
+        padding: EdgeInsets.all(screenWidth * 0.06),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            // Icon
+            Icon(
+              Icons.play_circle_fill,
+              size: screenWidth * 0.22,
+              color: Colors.orange,
+            ),
+
+            SizedBox(height: screenHeight * 0.03),
+
+            // Title
+            Text(
+              "Dialysis In Progress",
+              style: TextStyle(
+                fontSize: screenWidth * 0.055,
+                fontWeight: FontWeight.bold,
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            SizedBox(height: screenHeight * 0.015),
+
+            // Subtitle
+            Text(
+              "Please complete today's dialysis session.",
+              style: TextStyle(
+                fontSize: screenWidth * 0.04,
+                color: Colors.grey[600],
+              ),
+              textAlign: TextAlign.center,
+            ),
+
+            SizedBox(height: screenHeight * 0.04),
+
+            // CTA Button
+            ElevatedButton.icon(
+              icon: const Icon(Icons.arrow_forward),
+              label: const Text("Continue Dialysis"),
+              onPressed: () {
+                Get.off(
+                      () => DayVoluntaryScreen(
+                    materialSessionId: materialSessionId,
+                    dayNumber: day.dayNumber,
+                        patientId: patientId,
+                  ),
+
+                );
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.orange,
+                padding: EdgeInsets.symmetric(
+                  horizontal: screenWidth * 0.1,
+                  vertical: screenHeight * 0.02,
+                ),
+                textStyle: TextStyle(
+                  fontSize: screenWidth * 0.042,
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildCompletedUnverifiedView(BuildContext context, dynamic day, double screenWidth) {
     final params = day.parameters;
     final voluntary = params['voluntary'] ?? {};
     final dialysis = params['dialysis'] ?? {};
@@ -171,7 +265,7 @@ class DayDetailsPage extends StatelessWidget {
     );
   }
 
-  Widget _buildCompletedView(BuildContext context, dynamic day, double screenWidth) {
+  Widget _buildCompletedVerifiedView(BuildContext context, dynamic day, double screenWidth) {
     final params = day.parameters;
     final voluntary = params['voluntary'] ?? {};
     final dialysis = params['dialysis'] ?? {};

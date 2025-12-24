@@ -6,6 +6,10 @@ import 'package:digitaldailysis/models/patient/patient_info_model.dart';
 import 'package:digitaldailysis/data/api/api_client.dart';
 
 class PatientInfoController extends GetxController {
+  // Single material session details (doctor view)
+  var isMaterialSessionLoading = false.obs;
+  var materialSessionError = ''.obs;
+  var materialSessionDetails = Rxn<MaterialSession>();
   final String patientId;
   PatientInfoController({required this.patientId});
 
@@ -85,4 +89,51 @@ class PatientInfoController extends GetxController {
     final m = responseModel.value?.materialSessions ?? [];
     return m.where((s) => sessionBucket(s) == 'pending').toList();
   }
+
+  /// Fetch single material session details (Doctor view)
+  Future<void> fetchMaterialSessionDetailsByDoc({
+    required String patientId,
+    required String materialSessionId,
+  }) async {
+    try {
+      isMaterialSessionLoading.value = true;
+      materialSessionError.value = '';
+
+      final uri =
+          '${apiClient.appBaseUrl}/api/upload/material/session-details';
+
+      final http.Response res = await apiClient.postData(
+        uri,
+        {
+          'patientId': patientId,
+          'materialSessionId': materialSessionId,
+        },
+      );
+
+      if (res.statusCode == 200) {
+        final Map<String, dynamic> body = jsonDecode(res.body);
+
+        if (body['success'] == true && body['materialSession'] != null) {
+          materialSessionDetails.value =
+              MaterialSession.fromJson(body['materialSession']);
+        } else {
+          materialSessionError.value = 'Invalid response from server';
+          print('session-details unexpected body: $body');
+        }
+      } else {
+        materialSessionError.value =
+        'Server error: ${res.statusCode}';
+        print(
+            'session-details failed: ${res.statusCode} ${res.body}');
+      }
+    } catch (e) {
+      materialSessionError.value =
+      'Failed to load session details';
+      print('fetchMaterialSessionDetailsByDoc error: $e');
+    } finally {
+      isMaterialSessionLoading.value = false;
+    }
+  }
+
+
 }
