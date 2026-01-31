@@ -1,36 +1,34 @@
+// lib/pages/doctor/register_patient_page.dart
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
-import 'package:digitaldailysis/controllers/doctor_controller.dart';
+import 'package:digitaldailysis/controllers/patient_registration_controller.dart';
+import 'package:digitaldailysis/data/api/api_client.dart';
 import 'package:digitaldailysis/utils/colors.dart';
+import 'step1_basic_registration.dart';
+import 'step2_medical_profile.dart';
+import 'step3_baseline_assessment.dart';
 
-class RegisterPatientPage extends StatefulWidget {
+class RegisterPatientPage extends StatelessWidget {
   final String doctorId;
 
   const RegisterPatientPage({super.key, required this.doctorId});
 
   @override
-  State<RegisterPatientPage> createState() => _RegisterPatientPageState();
-}
-
-class _RegisterPatientPageState extends State<RegisterPatientPage> {
-  final _formKey = GlobalKey<FormState>();
-
-  final TextEditingController nameController = TextEditingController();
-  final TextEditingController emailController = TextEditingController();
-  final TextEditingController passwordController = TextEditingController();
-
-  bool isPasswordVisible = false;
-
-  @override
   Widget build(BuildContext context) {
-    final doctorController = Get.find<DoctorController>();
-    final mq = MediaQuery.of(context);
-    final w = mq.size.width;
-    final h = mq.size.height;
+    // Get ApiClient from GetX dependency injection
+    final apiClient = Get.find<ApiClient>();
+
+    // Initialize controller with ApiClient
+    final controller = Get.put(
+      PatientRegistrationController(apiClient: apiClient),
+      tag: 'patient_registration',
+    );
+
+    final w = MediaQuery.of(context).size.width;
+    final h = MediaQuery.of(context).size.height;
 
     return Scaffold(
       backgroundColor: AppColors.white,
-
       appBar: AppBar(
         backgroundColor: AppColors.darkPrimary,
         title: Text(
@@ -43,163 +41,105 @@ class _RegisterPatientPageState extends State<RegisterPatientPage> {
         ),
         centerTitle: true,
       ),
+      body: Column(
+        children: [
+          // Step Indicator
+          Obx(() => _buildStepIndicator(controller.currentStep.value, w, h)),
 
-      body: SingleChildScrollView(
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: w * 0.08,
-            vertical: h * 0.03,
+          // Step Content
+          Expanded(
+            child: Obx(() {
+              switch (controller.currentStep.value) {
+                case 0:
+                  return Step1BasicRegistration(controller: controller, doctorId:doctorId);
+                case 1:
+                  return Step2MedicalProfile(controller: controller);
+                case 2:
+                  return Step3BaselineAssessment(controller: controller);
+                default:
+                  return const SizedBox();
+              }
+            }),
           ),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              children: [
-                // Title
-                Text(
-                  "Patient Details",
-                  style: TextStyle(
-                    fontSize: w * 0.055,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.black,
-                  ),
-                ),
-
-                SizedBox(height: h * 0.03),
-
-                // Name
-                TextFormField(
-                  controller: nameController,
-                  decoration: _inputDecoration(
-                    label: "Name",
-                    icon: Icons.person_outline,
-                    w: w,
-                  ),
-                  validator: (value) =>
-                  value == null || value.isEmpty
-                      ? "Please enter patient name"
-                      : null,
-                ),
-
-                SizedBox(height: h * 0.025),
-
-                // Email
-                TextFormField(
-                  controller: emailController,
-                  keyboardType: TextInputType.emailAddress,
-                  decoration: _inputDecoration(
-                    label: "Email",
-                    icon: Icons.email_outlined,
-                    w: w,
-                  ),
-                  validator: (value) =>
-                  value == null || value.isEmpty
-                      ? "Please enter email"
-                      : null,
-                ),
-
-                SizedBox(height: h * 0.025),
-
-                // Password with eye icon
-                TextFormField(
-                  controller: passwordController,
-                  obscureText: !isPasswordVisible,
-                  decoration: _inputDecoration(
-                    label: "Password",
-                    icon: Icons.lock_outline,
-                    w: w,
-                    suffix: IconButton(
-                      icon: Icon(
-                        isPasswordVisible
-                            ? Icons.visibility
-                            : Icons.visibility_off,
-                        color: AppColors.mediumGrey,
-                        size: w * 0.06,
-                      ),
-                      onPressed: () {
-                        setState(() {
-                          isPasswordVisible = !isPasswordVisible;
-                        });
-                      },
-                    ),
-                  ),
-                  validator: (value) =>
-                  value == null || value.length < 6
-                      ? "Minimum 6 characters required"
-                      : null,
-                ),
-
-                SizedBox(height: h * 0.05),
-
-                // Register button / loader
-                doctorController.isLoading
-                    ? CircularProgressIndicator(
-                  color: AppColors.darkPrimary,
-                )
-                    : SizedBox(
-                  width: double.infinity,
-                  height: h * 0.065,
-                  child: ElevatedButton(
-                    onPressed: () async {
-                      if (_formKey.currentState!.validate()) {
-                        await doctorController.registerPatient(
-                          nameController.text.trim(),
-                          emailController.text.trim(),
-                          passwordController.text.trim(),
-                          widget.doctorId,
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.darkPrimary,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(w * 0.03),
-                      ),
-                    ),
-                    child: Text(
-                      "Register Patient",
-                      style: TextStyle(
-                        fontSize: w * 0.045,
-                        fontWeight: FontWeight.w600,
-                        color: AppColors.white,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+        ],
       ),
     );
   }
 
-  // 🔹 Common InputDecoration
-  InputDecoration _inputDecoration({
-    required String label,
-    required IconData icon,
-    required double w,
-    Widget? suffix,
-  }) {
-    return InputDecoration(
-      labelText: label,
-      prefixIcon: Icon(
-        icon,
-        color: AppColors.darkPrimary,
-        size: w * 0.06,
+  Widget _buildStepIndicator(int currentStep, double w, double h) {
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: h * 0.025, horizontal: w * 0.05),
+      decoration: BoxDecoration(
+        color: AppColors.lightGrey,
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 5,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
-      suffixIcon: suffix,
-      filled: true,
-      fillColor: AppColors.lightGrey,
-      border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(w * 0.03),
-        borderSide: BorderSide.none,
+      child: Row(
+        children: [
+          _buildStepCircle(0, currentStep, "Basic", w),
+          _buildStepLine(currentStep >= 1, w),
+          _buildStepCircle(1, currentStep, "Profile", w),
+          _buildStepLine(currentStep >= 2, w),
+          _buildStepCircle(2, currentStep, "Assessment", w),
+        ],
       ),
-      focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(w * 0.03),
-        borderSide: BorderSide(
-          color: AppColors.darkPrimary,
-          width: 2,
+    );
+  }
+
+  Widget _buildStepCircle(int step, int currentStep, String label, double w) {
+    final isActive = currentStep >= step;
+    final isCurrent = currentStep == step;
+
+    return Column(
+      children: [
+        Container(
+          width: w * 0.12,
+          height: w * 0.12,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            color: isActive ? AppColors.darkPrimary : AppColors.mediumGrey,
+            border: Border.all(
+              color: isCurrent ? AppColors.darkPrimary : Colors.transparent,
+              width: 3,
+            ),
+          ),
+          child: Center(
+            child: isActive && !isCurrent
+                ? const Icon(Icons.check, color: Colors.white)
+                : Text(
+              '${step + 1}',
+              style: TextStyle(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: w * 0.045,
+              ),
+            ),
+          ),
         ),
+        SizedBox(height: w * 0.015),
+        Text(
+          label,
+          style: TextStyle(
+            fontSize: w * 0.03,
+            fontWeight: isCurrent ? FontWeight.bold : FontWeight.normal,
+            color: isActive ? AppColors.darkPrimary : AppColors.mediumGrey,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildStepLine(bool isActive, double w) {
+    return Expanded(
+      child: Container(
+        height: 2,
+        margin: EdgeInsets.only(bottom: w * 0.08),
+        color: isActive ? AppColors.darkPrimary : AppColors.mediumGrey,
       ),
     );
   }

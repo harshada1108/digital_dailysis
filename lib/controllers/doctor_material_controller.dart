@@ -26,13 +26,15 @@ class DoctorMaterialController extends GetxController {
         },
 
       );
-
+      print(res.body);
       if (res.statusCode == 200) {
-
+        print("verified successfully");
+        print(res);
 
 
         return true;
       } else {
+        print("verificatrion failed");
 
         return false;
       }

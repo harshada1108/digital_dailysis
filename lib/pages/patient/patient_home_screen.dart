@@ -1,3 +1,4 @@
+import 'package:digitaldailysis/pages/patient/VideoPlayerScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -231,7 +232,7 @@ class PatientHomeScreen extends StatelessWidget {
                   if (ms != null) {
                     Get.to(
                           () => MaterialSessionDetailsPage(
-                        sessionId: ms.materialSessionId,
+                        sessionId: ms.materialSession.materialSessionId,
                         patientId: patientId,
                       ),
                     );
@@ -588,8 +589,11 @@ class PatientHomeScreen extends StatelessWidget {
       IconData icon,
       ) {
     if (icon == Icons.play_circle_outline) {
-      // Open YouTube video in browser
-      _launchURL(item['url']!);
+      // Open video player
+      Get.to(() => VideoPlayerScreen(
+        title: item['title']!,
+        videoUrl: item['url']!,
+      ));
     } else if (icon == Icons.picture_as_pdf) {
       // Open PDF in browser
       _launchURL(item['url']!);
@@ -601,6 +605,7 @@ class PatientHomeScreen extends StatelessWidget {
       ));
     }
   }
+
 
   void _launchURL(String url) async {
     final uri = Uri.parse(url);

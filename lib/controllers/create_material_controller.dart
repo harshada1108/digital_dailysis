@@ -10,7 +10,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
-
 class CreateMaterialController extends GetxController {
   final String doctorId;
   final String patientId;
@@ -28,16 +27,15 @@ class CreateMaterialController extends GetxController {
     apiClient = Get.find<ApiClient>();
   }
 
-  /// Start (create) a material session on server. Returns the created session _id
+  /// Start (create) a PD material session on server. Returns the created session _id
   Future<String?> startMaterialSession({
     required int sessionsCount,
-    required String dialysisMachine,
-    required bool dialyzer,
-    required bool bloodTubingSets,
-    required bool dialysisNeedles,
-    required bool dialysateConcentrates,
-    required bool heparin,
-    required bool salineSolution,
+    required int transferSet,
+    required Map<String, int> capdFluids,
+    required Map<String, int> apdFluids,
+    required int icodextrin2L,
+    required int minicap,
+    required Map<String, dynamic>? others,
     String? notes,
   }) async {
     try {
@@ -48,13 +46,14 @@ class CreateMaterialController extends GetxController {
       final body = {
         'patientId': patientId,
         'sessionsCount': sessionsCount,
-        'dialysisMachine': dialysisMachine,
-        'dialyzer': dialyzer,
-        'bloodTubingSets': bloodTubingSets,
-        'dialysisNeedles': dialysisNeedles,
-        'dialysateConcentrates': dialysateConcentrates,
-        'heparin': heparin,
-        'salineSolution': salineSolution,
+        'pdMaterials': {
+          'transferSet': transferSet,
+          'capd': capdFluids,
+          'apd': apdFluids,
+          'icodextrin2L': icodextrin2L,
+          'minicap': minicap,
+          'others': others,
+        },
         'notes': notes ?? '',
       };
 
@@ -65,8 +64,10 @@ class CreateMaterialController extends GetxController {
         if (parsed['success'] == true && parsed['session'] != null) {
           final session = parsed['session'];
           // server returns session object with _id or id
-          final id = session['_id'] ?? session['id'] ?? session['materialSessionId'] ?? session['materialSessionId'];
-          // if server returns materialSessionId null (active created but id in _id)
+          final id = session['_id'] ??
+              session['id'] ??
+              session['materialSessionId'] ??
+              session['materialSessionId'];
           return id?.toString();
         } else {
           errorMsg.value = 'Unexpected response from server';
@@ -88,22 +89,18 @@ class CreateMaterialController extends GetxController {
   }
 
   /// Upload a single image file for given session _id.
-  /// returns true when server responded with success (200)
-
-
-  /// Upload a single image file for given session _id.
   Future<bool> uploadMaterialImage({
     required String sessionId,
-    required XFile imageFile,  // ✅ Changed from filePath to XFile
+    required XFile imageFile,
   }) async {
     try {
       final uploadUrl =
       Uri.parse('${apiClient.appBaseUrl}/api/upload/upload');
 
-      // ✅ READ IMAGE BYTES - works on both web and mobile
+      // Read image bytes - works on both web and mobile
       final bytes = await imageFile.readAsBytes();
 
-      // ✅ CREATE MULTIPART REQUEST
+      // Create multipart request
       final request = http.MultipartRequest('POST', uploadUrl);
       request.fields['sessionId'] = sessionId;
 
@@ -117,7 +114,7 @@ class CreateMaterialController extends GetxController {
         http.MultipartFile.fromBytes(
           'image',
           bytes,
-          filename: imageFile.name, // Use the actual filename
+          filename: imageFile.name,
         ),
       );
 
@@ -142,28 +139,26 @@ class CreateMaterialController extends GetxController {
   /// Complete flow: start session -> upload images list -> return created materialSessionId
   Future<String?> createAndUpload({
     required int sessionsCount,
-    required String dialysisMachine,
-    required bool dialyzer,
-    required bool bloodTubingSets,
-    required bool dialysisNeedles,
-    required bool dialysateConcentrates,
-    required bool heparin,
-    required bool salineSolution,
+    required int transferSet,
+    required Map<String, int> capdFluids,
+    required Map<String, int> apdFluids,
+    required int icodextrin2L,
+    required int minicap,
+    required Map<String, dynamic>? others,
     String? notes,
-    List<XFile>? imageFiles,  // ✅ Changed from imagePaths to imageFiles
+    List<XFile>? imageFiles,
   }) async {
     isSubmitting.value = true;
     errorMsg.value = '';
     try {
       final sessionId = await startMaterialSession(
         sessionsCount: sessionsCount,
-        dialysisMachine: dialysisMachine,
-        dialyzer: dialyzer,
-        bloodTubingSets: bloodTubingSets,
-        dialysisNeedles: dialysisNeedles,
-        dialysateConcentrates: dialysateConcentrates,
-        heparin: heparin,
-        salineSolution: salineSolution,
+        transferSet: transferSet,
+        capdFluids: capdFluids,
+        apdFluids: apdFluids,
+        icodextrin2L: icodextrin2L,
+        minicap: minicap,
+        others: others,
         notes: notes,
       );
 
@@ -177,7 +172,7 @@ class CreateMaterialController extends GetxController {
         for (final imageFile in imageFiles) {
           final ok = await uploadMaterialImage(
             sessionId: sessionId,
-            imageFile: imageFile,  // ✅ Pass XFile object
+            imageFile: imageFile,
           );
           if (!ok) {
             print('Image upload failed for ${imageFile.name}');
@@ -190,7 +185,4 @@ class CreateMaterialController extends GetxController {
       isSubmitting.value = false;
     }
   }
-
-
-
 }

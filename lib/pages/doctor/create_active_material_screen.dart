@@ -28,17 +28,34 @@ class _CreateActiveMaterialScreenState
 
   List<XFile> images = [];
 
-  int sessionsCount = 5;
-  String dialysisMachine = 'portable';
-  bool dialyzer = true;
-  bool bloodTubingSets = true;
-  bool dialysisNeedles = true;
-  bool dialysateConcentrates = true;
-  bool heparin = true;
-  bool salineSolution = true;
+  // Basic info
+  int sessionsCount = 10;
+
+  // PD Materials
+  int transferSet = 2;
+
+  // CAPD Fluids
+  int capdFluid1_5_2L = 0;
+  int capdFluid2_5_2L = 0;
+  int capdFluid4_25_2L = 0;
+  int capdFluid1_5_1L = 0;
+  int capdFluid2_5_1L = 0;
+  int capdFluid4_25_1L = 0;
+
+  // APD Fluids
+  int apdFluid1_7_1L = 0;
+
+  // Other materials
+  int icodextrin2L = 0;
+  int minicap = 0;
+
+  // Others
+  final TextEditingController othersDescriptionController =
+  TextEditingController();
+  int othersQuantity = 0;
 
   final TextEditingController notesController =
-  TextEditingController(text: 'Kit for 5 days issued.');
+  TextEditingController(text: 'PD supply for 10 sessions');
 
   @override
   void initState() {
@@ -55,6 +72,7 @@ class _CreateActiveMaterialScreenState
   void dispose() {
     Get.delete<CreateMaterialController>();
     notesController.dispose();
+    othersDescriptionController.dispose();
     super.dispose();
   }
 
@@ -66,15 +84,34 @@ class _CreateActiveMaterialScreenState
   }
 
   Future<void> submit() async {
+    final capdFluids = {
+      'fluid1_5_2L': capdFluid1_5_2L,
+      'fluid2_5_2L': capdFluid2_5_2L,
+      'fluid4_25_2L': capdFluid4_25_2L,
+      'fluid1_5_1L': capdFluid1_5_1L,
+      'fluid2_5_1L': capdFluid2_5_1L,
+      'fluid4_25_1L': capdFluid4_25_1L,
+    };
+
+    final apdFluids = {
+      'fluid1_7_1L': apdFluid1_7_1L,
+    };
+
+    final others = (othersQuantity > 0)
+        ? {
+      'description': othersDescriptionController.text.trim(),
+      'quantity': othersQuantity,
+    }
+        : null;
+
     final id = await controller.createAndUpload(
       sessionsCount: sessionsCount,
-      dialysisMachine: dialysisMachine,
-      dialyzer: dialyzer,
-      bloodTubingSets: bloodTubingSets,
-      dialysisNeedles: dialysisNeedles,
-      dialysateConcentrates: dialysateConcentrates,
-      heparin: heparin,
-      salineSolution: salineSolution,
+      transferSet: transferSet,
+      capdFluids: capdFluids,
+      apdFluids: apdFluids,
+      icodextrin2L: icodextrin2L,
+      minicap: minicap,
+      others: others,
       notes: notesController.text.trim(),
       imageFiles: images,
     );
@@ -83,7 +120,7 @@ class _CreateActiveMaterialScreenState
       Get.back(result: true);
       Get.snackbar(
         'Success',
-        'Dialysis material created successfully',
+        'PD material session created successfully',
         backgroundColor: AppColors.darkPrimary,
         colorText: AppColors.white,
         snackPosition: SnackPosition.BOTTOM,
@@ -109,12 +146,11 @@ class _CreateActiveMaterialScreenState
 
     return Scaffold(
       backgroundColor: AppColors.lightGrey,
-
       appBar: AppBar(
         backgroundColor: AppColors.darkPrimary,
         centerTitle: true,
         title: Text(
-          'Create Dialysis Material',
+          'Create PD Material Session',
           style: TextStyle(
             fontSize: w * 0.05,
             fontWeight: FontWeight.bold,
@@ -122,87 +158,165 @@ class _CreateActiveMaterialScreenState
           ),
         ),
       ),
-
       body: SingleChildScrollView(
         padding: EdgeInsets.all(w * 0.05),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Basic Info Card
             _card(
               w,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
+                  _sectionHeader('Basic Information', Icons.info_outline, w),
+                  SizedBox(height: h * 0.015),
                   Row(
                     children: [
                       Expanded(
                         child: TextFormField(
                           initialValue: sessionsCount.toString(),
                           keyboardType: TextInputType.number,
-                          decoration:
-                          _inputDecoration('Sessions', Icons.event, w),
+                          decoration: _inputDecoration(
+                              'Sessions Count', Icons.event, w),
                           onChanged: (v) {
                             sessionsCount = int.tryParse(v) ?? sessionsCount;
                             notesController.text =
-                            'Kit for $sessionsCount days issued.';
+                            'PD supply for $sessionsCount sessions';
                           },
                         ),
                       ),
                       SizedBox(width: w * 0.04),
                       Expanded(
-                        child: DropdownButtonFormField<String>(
-                          value: dialysisMachine,
-                          decoration:
-                          _inputDecoration('Machine', Icons.settings, w),
-                          items: ['portable', 'automated', 'other']
-                              .map(
-                                (e) => DropdownMenuItem(
-                              value: e,
-                              child: Text(e),
-                            ),
-                          )
-                              .toList(),
-                          onChanged: (v) =>
-                              setState(() => dialysisMachine = v!),
+                        child: TextFormField(
+                          initialValue: transferSet.toString(),
+                          keyboardType: TextInputType.number,
+                          decoration: _inputDecoration(
+                              'Transfer Set', Icons.swap_horiz, w),
+                          onChanged: (v) {
+                            setState(() {
+                              transferSet = int.tryParse(v) ?? transferSet;
+                            });
+                          },
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: h * 0.02),
-                  _check('Dialyzer', dialyzer, (v) => dialyzer = v),
-                  _check('Blood Tubing Sets', bloodTubingSets,
-                          (v) => bloodTubingSets = v),
-                  _check('Dialysis Needles', dialysisNeedles,
-                          (v) => dialysisNeedles = v),
-                  _check('Dialysate Concentrates', dialysateConcentrates,
-                          (v) => dialysateConcentrates = v),
-                  _check('Heparin', heparin, (v) => heparin = v),
-                  _check('Saline Solution', salineSolution,
-                          (v) => salineSolution = v),
                 ],
               ),
             ),
 
             SizedBox(height: h * 0.03),
 
+            // CAPD Fluids Card
             _card(
               w,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Notes',
-                    style: TextStyle(
-                      fontSize: w * 0.045,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.black,
-                    ),
+                  _sectionHeader('CAPD Fluids', Icons.water_drop, w),
+                  SizedBox(height: h * 0.015),
+                  _numberInput('Fluid 1.5% 2L', capdFluid1_5_2L, w,
+                          (v) => capdFluid1_5_2L = v),
+                  SizedBox(height: h * 0.015),
+                  _numberInput('Fluid 2.5% 2L', capdFluid2_5_2L, w,
+                          (v) => capdFluid2_5_2L = v),
+                  SizedBox(height: h * 0.015),
+                  _numberInput('Fluid 4.25% 2L', capdFluid4_25_2L, w,
+                          (v) => capdFluid4_25_2L = v),
+                  SizedBox(height: h * 0.015),
+                  _numberInput('Fluid 1.5% 1L', capdFluid1_5_1L, w,
+                          (v) => capdFluid1_5_1L = v),
+                  SizedBox(height: h * 0.015),
+                  _numberInput('Fluid 2.5% 1L', capdFluid2_5_1L, w,
+                          (v) => capdFluid2_5_1L = v),
+                  SizedBox(height: h * 0.015),
+                  _numberInput('Fluid 4.25% 1L', capdFluid4_25_1L, w,
+                          (v) => capdFluid4_25_1L = v),
+                ],
+              ),
+            ),
+
+            SizedBox(height: h * 0.03),
+
+            // APD Fluids Card
+            _card(
+              w,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionHeader('APD Fluids', Icons.local_hospital, w),
+                  SizedBox(height: h * 0.015),
+                  _numberInput('Fluid 1.7% 1L', apdFluid1_7_1L, w,
+                          (v) => apdFluid1_7_1L = v),
+                ],
+              ),
+            ),
+
+            SizedBox(height: h * 0.03),
+
+            // Other Materials Card
+            _card(
+              w,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionHeader('Other Materials', Icons.medical_services, w),
+                  SizedBox(height: h * 0.015),
+                  _numberInput(
+                      'Icodextrin 2L', icodextrin2L, w, (v) => icodextrin2L = v),
+                  SizedBox(height: h * 0.015),
+                  _numberInput('Minicap', minicap, w, (v) => minicap = v),
+                ],
+              ),
+            ),
+
+            SizedBox(height: h * 0.03),
+
+            // Additional Items Card
+            _card(
+              w,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionHeader('Additional Items', Icons.inventory_2, w),
+                  SizedBox(height: h * 0.015),
+                  TextFormField(
+                    controller: othersDescriptionController,
+                    decoration: _inputDecoration(
+                        'Description', Icons.description, w),
                   ),
-                  SizedBox(height: h * 0.01),
+                  SizedBox(height: h * 0.015),
+                  TextFormField(
+                    initialValue: othersQuantity.toString(),
+                    keyboardType: TextInputType.number,
+                    decoration:
+                    _inputDecoration('Quantity', Icons.numbers, w),
+                    onChanged: (v) {
+                      setState(() {
+                        othersQuantity = int.tryParse(v) ?? othersQuantity;
+                      });
+                    },
+                  ),
+                ],
+              ),
+            ),
+
+            SizedBox(height: h * 0.03),
+
+            // Notes Card
+            _card(
+              w,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _sectionHeader('Notes', Icons.note, w),
+                  SizedBox(height: h * 0.015),
                   TextField(
                     controller: notesController,
                     maxLines: 3,
                     decoration:
-                    _inputDecoration('Optional notes', Icons.note, w),
+                    _inputDecoration('Optional notes', Icons.edit_note, w),
                   ),
                 ],
               ),
@@ -210,19 +324,13 @@ class _CreateActiveMaterialScreenState
 
             SizedBox(height: h * 0.03),
 
+            // Material Images Card
             _card(
               w,
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    'Material Images',
-                    style: TextStyle(
-                      fontSize: w * 0.045,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.black,
-                    ),
-                  ),
+                  _sectionHeader('Material Images', Icons.photo_library, w),
                   SizedBox(height: h * 0.015),
                   ElevatedButton.icon(
                     onPressed: pickImages,
@@ -242,15 +350,13 @@ class _CreateActiveMaterialScreenState
                       child: ListView.separated(
                         scrollDirection: Axis.horizontal,
                         itemCount: images.length,
-                        separatorBuilder: (_, __) =>
-                            SizedBox(width: w * 0.03),
+                        separatorBuilder: (_, __) => SizedBox(width: w * 0.03),
                         itemBuilder: (_, i) {
                           final img = images[i];
                           return Stack(
                             children: [
                               ClipRRect(
-                                borderRadius:
-                                BorderRadius.circular(w * 0.03),
+                                borderRadius: BorderRadius.circular(w * 0.03),
                                 child: kIsWeb
                                     ? Image.network(
                                   img.path,
@@ -291,6 +397,7 @@ class _CreateActiveMaterialScreenState
 
             SizedBox(height: h * 0.05),
 
+            // Submit Button
             Obx(
                   () => controller.isSubmitting.value
                   ? Center(
@@ -345,16 +452,34 @@ class _CreateActiveMaterialScreenState
     );
   }
 
-  Widget _check(String label, bool value, ValueChanged<bool> onChanged) {
-    return CheckboxListTile(
-      value: value,
-      onChanged: (v) => setState(() => onChanged(v ?? false)),
-      title: Text(
-        label,
-        style: TextStyle(color: AppColors.black),
-      ),
-      activeColor: AppColors.darkPrimary,
-      contentPadding: EdgeInsets.zero,
+  Widget _sectionHeader(String title, IconData icon, double w) {
+    return Row(
+      children: [
+        Icon(icon, color: AppColors.darkPrimary, size: w * 0.06),
+        SizedBox(width: w * 0.025),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: w * 0.045,
+            fontWeight: FontWeight.bold,
+            color: AppColors.black,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _numberInput(
+      String label, int value, double w, ValueChanged<int> onChanged) {
+    return TextFormField(
+      initialValue: value.toString(),
+      keyboardType: TextInputType.number,
+      decoration: _inputDecoration(label, Icons.format_list_numbered, w),
+      onChanged: (v) {
+        setState(() {
+          onChanged(int.tryParse(v) ?? value);
+        });
+      },
     );
   }
 

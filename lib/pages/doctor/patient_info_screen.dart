@@ -253,6 +253,8 @@ class PatientInfoScreen extends StatelessWidget {
 
 
                     patientId: patientId,
+                    materialSessionId: ms.materialSessionId,
+                    patientName: "Alice",
               ),
             );
           } else {

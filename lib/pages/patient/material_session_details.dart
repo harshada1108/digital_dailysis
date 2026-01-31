@@ -110,10 +110,10 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
               _buildStatusHeader(session, screenWidth),
               _buildStatsCard(stats, screenWidth),
               _buildMaterialsSection(session, screenWidth),
-              if (session.materialImages != null && session.materialImages.isNotEmpty)
-                _buildMaterialImagesSection(session.materialImages, screenWidth),
+              if (session.materialSession.materialImages != null && session.materialSession.materialImages.isNotEmpty)
+                _buildMaterialImagesSection(session.materialSession.materialImages, screenWidth),
               _buildDaysSection(session, controller, screenWidth),
-              if (session.status != "acknowledged")
+              if (session.materialSession.status != "acknowledged")
                 _buildAcknowledgeButton(context, controller, widget.sessionId, screenWidth, screenHeight),
               SizedBox(height: screenWidth * 0.04),
             ],

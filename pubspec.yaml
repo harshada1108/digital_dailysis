@@ -41,6 +41,14 @@ dependencies:
   intl:
   video_player:
   url_launcher:
+  youtube_player_flutter:
+  youtube_player_iframe:
+  dio:
+  pdf:
+  path_provider:
+  open_file:
+  permission_handler:
+  universal_html:
 
 dev_dependencies:
   flutter_test:

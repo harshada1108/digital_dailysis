@@ -38,6 +38,30 @@ class PatientShort {
     );
   }
 }
+class MaterialSessionResponse {
+  final bool success;
+  final MaterialSession materialSession;
+
+
+  MaterialSessionResponse({
+    required this.success,
+    required this.materialSession,
+
+  });
+
+  factory MaterialSessionResponse.fromJson(Map<String, dynamic> body) {
+    final json = Map<String, dynamic>.from(body);
+
+    return MaterialSessionResponse(
+
+      success: json['success'] ?? false,
+      materialSession:
+      MaterialSession.fromJson(json['materialSession'] ?? {}),
+
+    );
+  }
+}
+
 
 class MaterialSession {
   final String materialSessionId;
@@ -45,9 +69,11 @@ class MaterialSession {
   final String status;
   final DateTime? acknowledgedAt;
   final Materials materials;
-  final int plannedSessions;
+  final int totalSessionsAllowed;
+  final int completedSessions;
+  final int remainingSessions;
   final List<MaterialImage> materialImages;
-  final List<DayItem> days;
+  final List<DialysisSession> dialysisSessions;
 
   MaterialSession({
     required this.materialSessionId,
@@ -55,65 +81,94 @@ class MaterialSession {
     required this.status,
     required this.acknowledgedAt,
     required this.materials,
-    required this.plannedSessions,
+    required this.totalSessionsAllowed,
+    required this.completedSessions,
+    required this.remainingSessions,
     required this.materialImages,
-    required this.days,
+    required this.dialysisSessions,
   });
 
   factory MaterialSession.fromJson(Map<String, dynamic> j) {
+    print("printing dailysis sessions");
+    print(j['dialysisSessions']);
     return MaterialSession(
-      materialSessionId: j['materialSessionId'] ?? j['materialSessionId'] ?? '',
-      createdAt: j['createdAt'] != null ? DateTime.parse(j['createdAt']) : null,
+
+      materialSessionId: j['materialSessionId'] ?? '',
+      createdAt:
+      j['createdAt'] != null ? DateTime.parse(j['createdAt']) : null,
       status: j['status'] ?? '',
-      acknowledgedAt: j['acknowledgedAt'] != null ? DateTime.parse(j['acknowledgedAt']) : null,
+      acknowledgedAt: j['acknowledgedAt'] != null
+          ? DateTime.parse(j['acknowledgedAt'])
+          : null,
       materials: Materials.fromJson(j['materials'] ?? {}),
-      plannedSessions: j['plannedSessions'] ?? 0,
+      totalSessionsAllowed: j['totalSessionsAllowed'] ?? 0,
+      completedSessions: j['completedSessions'] ?? 0,
+      remainingSessions: j['remainingSessions'] ?? 0,
       materialImages: (j['materialImages'] as List<dynamic>?)
-          ?.map((e) => MaterialImage.fromJson(e as Map<String, dynamic>))
+          ?.map((e) => MaterialImage.fromJson(e))
           .toList() ??
           [],
-      days: (j['days'] as List<dynamic>?)
-          ?.map((e) => DayItem.fromJson(e as Map<String, dynamic>))
+      dialysisSessions: (j['dialysisSessions'] as List<dynamic>?)
+          ?.map((e) => DialysisSession.fromJson(
+        Map<String, dynamic>.from(e),
+      ))
           .toList() ??
           [],
     );
   }
 }
-
 class Materials {
+  final PDMaterals? pdMaterials;
   final int sessionsCount;
-  final String dialysisMachine;
-  final bool dialyzer;
-  final bool bloodTubingSets;
-  final bool dialysisNeedles;
-  final bool dialysateConcentrates;
-  final bool heparin;
-  final bool salineSolution;
+
 
   Materials({
+    required this.pdMaterials,
     required this.sessionsCount,
-    required this.dialysisMachine,
-    required this.dialyzer,
-    required this.bloodTubingSets,
-    required this.dialysisNeedles,
-    required this.dialysateConcentrates,
-    required this.heparin,
-    required this.salineSolution,
+
   });
 
-  factory Materials.fromJson(Map<String, dynamic> j) {
+  factory Materials.fromJson(Map<String, dynamic> json) {
     return Materials(
-      sessionsCount: j['sessionsCount'] ?? 0,
-      dialysisMachine: j['dialysisMachine'] ?? '',
-      dialyzer: j['dialyzer'] ?? false,
-      bloodTubingSets: j['bloodTubingSets'] ?? false,
-      dialysisNeedles: j['dialysisNeedles'] ?? false,
-      dialysateConcentrates: j['dialysateConcentrates'] ?? false,
-      heparin: j['heparin'] ?? false,
-      salineSolution: j['salineSolution'] ?? false,
+      pdMaterials: json['pdMaterials'] != null
+          ? PDMaterals.fromJson(json['pdMaterials'])
+          : null,
+      sessionsCount: json['sessionsCount'] ?? 0,
+
     );
   }
 }
+class PDMaterals {
+  final Map<String, dynamic>? capd;
+  final Map<String, dynamic>? apd;
+  final Map<String, dynamic>? others;
+  final int transferSet;
+  final int icodextrin2L;
+  final int minicap;
+
+
+  PDMaterals({
+    this.capd,
+    this.apd,
+    this.others,
+    required this.transferSet,
+    required this.icodextrin2L,
+    required this.minicap,
+
+  });
+
+  factory PDMaterals.fromJson(Map<String, dynamic> json) {
+    return PDMaterals(
+      capd: json['capd'] as Map<String, dynamic>?,
+      apd: json['apd'] as Map<String, dynamic>?,
+      others: json['others'] as Map<String, dynamic>?,
+      transferSet: json['transferSet'] ?? 0,
+      icodextrin2L: json['icodextrin2L'] ?? 0,
+      minicap: json['minicap'] ?? 0,
+    );
+  }
+}
+
 
 class MaterialImage {
   final String id;
@@ -137,6 +192,171 @@ class MaterialImage {
     );
   }
 }
+
+class DialysisSession {
+  final String sessionId;
+  final String status;
+  final DateTime? completedAt;
+  final SessionParameters? parameters;
+  final List<MaterialImage> images;
+
+  DialysisSession({
+    required this.sessionId,
+    required this.status,
+    required this.completedAt,
+    required this.parameters,
+    required this.images,
+  });
+
+  factory DialysisSession.fromJson(Map<String, dynamic> j) {
+    return DialysisSession(
+      sessionId: j['sessionId'] ?? '',
+      status: j['status'] ?? '',
+      completedAt: j['completedAt'] != null
+          ? DateTime.parse(j['completedAt'])
+          : null,
+      parameters: j['parameters'] != null
+          ? SessionParameters.fromJson(j['parameters'])
+          : null,
+      images: (j['images'] as List<dynamic>?)
+          ?.map((e) => MaterialImage.fromJson(e))
+          .toList() ??
+          [],
+    );
+  }
+}
+class SessionParameters {
+  final VoluntaryParameters? voluntary;
+
+  SessionParameters({this.voluntary});
+
+  factory SessionParameters.fromJson(Map<String, dynamic> j) {
+    return SessionParameters(
+      voluntary: j['voluntary'] != null
+          ? VoluntaryParameters.fromJson(j['voluntary'])
+          : null,
+    );
+  }
+}
+
+
+class VoluntaryParameters {
+  final int? wellbeing;
+
+  final bool? appetite;
+  final bool? nausea;
+  final bool? vomiting;
+  final bool? abdominalDiscomfort;
+  final bool? constipation;
+  final bool? diarrhea;
+
+  final int? sleepQuality;
+  final bool? fatigue;
+  final bool? ableToDoActivities;
+
+  final bool? breathlessness;
+  final bool? footSwelling;
+  final bool? facialPuffiness;
+  final bool? rapidWeightGain;
+
+  final bool? bpMeasured;
+  final int? sbp;
+  final int? dbp;
+
+  final bool? weightMeasured;
+  final double? weightKg;
+
+  final bool? painDuringFillDrain;
+  final bool? slowDrain;
+  final bool? catheterLeak;
+  final bool? exitSiteIssue;
+
+  final String? effluentClarity;
+
+  final bool? urinePassed;
+  final String? urineAmount;
+  final bool? fluidOverloadFeeling;
+
+  final bool? fever;
+  final bool? chills;
+  final bool? newAbdominalPain;
+  final bool? suddenUnwell;
+
+  final String? comments;
+
+  VoluntaryParameters({
+    this.wellbeing,
+    this.appetite,
+    this.nausea,
+    this.vomiting,
+    this.abdominalDiscomfort,
+    this.constipation,
+    this.diarrhea,
+    this.sleepQuality,
+    this.fatigue,
+    this.ableToDoActivities,
+    this.breathlessness,
+    this.footSwelling,
+    this.facialPuffiness,
+    this.rapidWeightGain,
+    this.bpMeasured,
+    this.sbp,
+    this.dbp,
+    this.weightMeasured,
+    this.weightKg,
+    this.painDuringFillDrain,
+    this.slowDrain,
+    this.catheterLeak,
+    this.exitSiteIssue,
+    this.effluentClarity,
+    this.urinePassed,
+    this.urineAmount,
+    this.fluidOverloadFeeling,
+    this.fever,
+    this.chills,
+    this.newAbdominalPain,
+    this.suddenUnwell,
+    this.comments,
+  });
+
+  factory VoluntaryParameters.fromJson(Map<String, dynamic> j) {
+    return VoluntaryParameters(
+      wellbeing: j['wellbeing'],
+      appetite: j['appetite'],
+      nausea: j['nausea'],
+      vomiting: j['vomiting'],
+      abdominalDiscomfort: j['abdominalDiscomfort'],
+      constipation: j['constipation'],
+      diarrhea: j['diarrhea'],
+      sleepQuality: j['sleepQuality'],
+      fatigue: j['fatigue'],
+      ableToDoActivities: j['ableToDoActivities'],
+      breathlessness: j['breathlessness'],
+      footSwelling: j['footSwelling'],
+      facialPuffiness: j['facialPuffiness'],
+      rapidWeightGain: j['rapidWeightGain'],
+      bpMeasured: j['bpMeasured'],
+      sbp: j['sbp'],
+      dbp: j['dbp'],
+      weightMeasured: j['weightMeasured'],
+      weightKg: j['weightKg'],
+      painDuringFillDrain: j['painDuringFillDrain'],
+      slowDrain: j['slowDrain'],
+      catheterLeak: j['catheterLeak'],
+      exitSiteIssue: j['exitSiteIssue'],
+      effluentClarity: j['effluentClarity'],
+      urinePassed: j['urinePassed'],
+      urineAmount: j['urineAmount'],
+      fluidOverloadFeeling: j['fluidOverloadFeeling'],
+      fever: j['fever'],
+      chills: j['chills'],
+      newAbdominalPain: j['newAbdominalPain'],
+      suddenUnwell: j['suddenUnwell'],
+      comments: j['comments'],
+    );
+  }
+}
+
 
 class DayItem {
   final int dayNumber;

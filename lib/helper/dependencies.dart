@@ -32,14 +32,16 @@ Future<void> init() async {
     ),
     tag: '',
   );
-
+  //Get.put(DoctorMaterialController(apiClient: Get.find()), permanent: true);
 
 
 
   // Controllers
-  Get.put(DoctorController(doctorRepo: Get.find()));
-  Get.lazyPut(
-        () => DoctorMaterialController(apiClient: Get.find()),
+  Get.put(DoctorMaterialController(apiClient: Get.find()),
   );
+  Get.put(DoctorController(doctorRepo: Get.find()));
+
+
+
 
 }

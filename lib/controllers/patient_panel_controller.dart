@@ -18,7 +18,7 @@ class PatientPanelController extends GetxController  implements GetxService {
   RxBool isLoading = false.obs;
   RxString errorMsg = "".obs;
   // Single material session details (for detail screen)
-  Rxn<MaterialSession> materialSessionDetails = Rxn<MaterialSession>();
+  Rxn<MaterialSessionResponse> materialSessionDetails = Rxn<MaterialSessionResponse>();
 
 
   // Use the model you already have
@@ -195,20 +195,22 @@ class PatientPanelController extends GetxController  implements GetxService {
       if (res.statusCode == 200) {
         final Map<String, dynamic> body = jsonDecode(res.body);
 
-        if (body['success'] == true && body['materialSession'] != null) {
+        if (body['success'] == true) {
           materialSessionDetails.value =
-              MaterialSession.fromJson(body['materialSession']);
+              MaterialSessionResponse.fromJson(body) as MaterialSessionResponse;
         } else {
-          errorMsg('No material session found');
+          errorMsg(body['message'] ?? 'No material session found');
+          print('Unexpected response body: $body');
         }
       } else {
         errorMsg('Failed: ${res.statusCode}');
         print(
             'fetchMaterialSessionDetails error ${res.statusCode}: ${res.body}');
       }
-    } catch (e) {
-      errorMsg(e.toString());
+    } catch (e, stack) {
+      errorMsg('Failed to load session details');
       print('fetchMaterialSessionDetails exception: $e');
+      print(stack);
     } finally {
       isLoading(false);
     }
