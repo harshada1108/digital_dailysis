@@ -19,7 +19,7 @@ class DayDialysisScreen extends StatefulWidget {
     required this.sessionId,
     required this.dayNumber,
     required this.MaterialSessionId,
-    required this.patientId
+    required this.patientId,
   });
 
   @override
@@ -27,26 +27,65 @@ class DayDialysisScreen extends StatefulWidget {
 }
 
 class _DayDialysisScreenState extends State<DayDialysisScreen> {
-  String feelingOk = "yes";
-  String fever = "no";
+  // General Well-being (1-10 scale)
+  double wellbeing = 7;
 
-  final comment = TextEditingController();
-  final fillVolume = TextEditingController();
-  final drainVolume = TextEditingController();
-  final fillTime = TextEditingController();
-  final drainTime = TextEditingController();
-  final bp = TextEditingController();
-  final weightPre = TextEditingController();
-  final weightPost = TextEditingController();
-  final exchanges = TextEditingController();
-  final duration = TextEditingController();
+  // Gastrointestinal Symptoms
+  bool appetite = true;
+  bool nausea = false;
+  bool vomiting = false;
+  bool abdominalDiscomfort = false;
+  bool constipation = false;
+  bool diarrhea = false;
 
+  // Energy & Sleep
+  double sleepQuality = 6;
+  bool fatigue = false;
+  bool ableToDoActivities = true;
+
+  // Fluid Status Indicators
+  bool breathlessness = false;
+  bool footSwelling = false;
+  bool facialPuffiness = false;
+  bool rapidWeightGain = false;
+
+  // Blood Pressure
+  bool bpMeasured = false;
+  final sbpController = TextEditingController();
+  final dbpController = TextEditingController();
+
+  // Weight
+  bool weightMeasured = false;
+  final weightKgController = TextEditingController();
+
+  // Dialysis-Specific Issues
+  bool painDuringFillDrain = false;
+  bool slowDrain = false;
+  bool catheterLeak = false;
+  bool exitSiteIssue = false;
+  String effluentClarity = "clear";
+
+  // Urine Output
+  bool urinePassed = true;
+  String urineAmount = "normal";
+  bool fluidOverloadFeeling = false;
+
+  // Red Flags
+  bool fever = false;
+  bool chills = false;
+  bool newAbdominalPain = false;
+  bool suddenUnwell = false;
+
+  // Comments
+  final commentsController = TextEditingController();
+
+  // Image
   File? selectedImage;
   Uint8List? webImage;
 
   @override
   Widget build(BuildContext context) {
-    final controller = Get.find<PatientPanelController>();
+    final controller = Get.find<PatientPanelController>(tag: widget.patientId);
     final size = MediaQuery.of(context).size;
     final width = size.width;
     final height = size.height;
@@ -63,7 +102,7 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
           onPressed: () => Get.back(),
         ),
         title: Text(
-          "Day ${widget.dayNumber} - Dialysis Session",
+          "Session ${widget.dayNumber} - Health Assessment",
           style: TextStyle(
             color: AppColors.white,
             fontWeight: FontWeight.w600,
@@ -76,35 +115,60 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Wellness Check Card
+            // General Well-being Section
             _buildSectionCard(
               context: context,
-              icon: Icons.favorite_rounded,
-              title: "How are you feeling?",
-              color: AppStatusColors.error,
+              icon: Icons.mood,
+              title: "General Well-being",
+              color: AppStatusColors.success,
               child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildWellnessQuestion(
-                    context,
-                    "Feeling OK today?",
-                    feelingOk,
-                        (v) => setState(() => feelingOk = v!),
+                  Text(
+                    "How are you feeling today? (1-10)",
+                    style: TextStyle(
+                      fontSize: width * 0.038,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black,
+                    ),
                   ),
-                  SizedBox(height: height * 0.02),
-                  _buildWellnessQuestion(
-                    context,
-                    "Any fever?",
-                    fever,
-                        (v) => setState(() => fever = v!),
-                  ),
-                  SizedBox(height: height * 0.02),
-                  _buildTextField(
-                    context: context,
-                    controller: comment,
-                    label: "Additional Comments",
-                    hint: "Share any concerns or observations...",
-                    maxLines: 3,
-                    icon: Icons.chat_bubble_outline_rounded,
+                  SizedBox(height: height * 0.015),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Slider(
+                          value: wellbeing,
+                          min: 1,
+                          max: 10,
+                          divisions: 9,
+                          label: wellbeing.round().toString(),
+                          activeColor: AppColors.darkPrimary,
+                          onChanged: (value) {
+                            setState(() {
+                              wellbeing = value;
+                            });
+                          },
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: width * 0.03,
+                          vertical: height * 0.008,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.darkPrimary,
+                          borderRadius: BorderRadius.circular(width * 0.02),
+                        ),
+                        child: Text(
+                          wellbeing.round().toString(),
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: width * 0.04,
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -112,126 +176,247 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
 
             SizedBox(height: height * 0.025),
 
-            // Technical Parameters Card
+            // Gastrointestinal Symptoms
             _buildSectionCard(
               context: context,
-              icon: Icons.science_rounded,
-              title: "Session Details",
+              icon: Icons.restaurant,
+              title: "Gastrointestinal Symptoms",
+              color: AppStatusColors.info,
+              child: Column(
+                children: [
+                  _buildCheckboxTile("Good Appetite", appetite, (val) => setState(() => appetite = val!)),
+                  _buildCheckboxTile("Nausea", nausea, (val) => setState(() => nausea = val!)),
+                  _buildCheckboxTile("Vomiting", vomiting, (val) => setState(() => vomiting = val!)),
+                  _buildCheckboxTile("Abdominal Discomfort", abdominalDiscomfort, (val) => setState(() => abdominalDiscomfort = val!)),
+                  _buildCheckboxTile("Constipation", constipation, (val) => setState(() => constipation = val!)),
+                  _buildCheckboxTile("Diarrhea", diarrhea, (val) => setState(() => diarrhea = val!)),
+                ],
+              ),
+            ),
+
+            SizedBox(height: height * 0.025),
+
+            // Energy & Sleep
+            _buildSectionCard(
+              context: context,
+              icon: Icons.bedtime,
+              title: "Energy & Sleep",
+              color: AppStatusColors.active,
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Sleep Quality (1-10)",
+                    style: TextStyle(
+                      fontSize: width * 0.038,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  SizedBox(height: height * 0.015),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: Slider(
+                          value: sleepQuality,
+                          min: 1,
+                          max: 10,
+                          divisions: 9,
+                          label: sleepQuality.round().toString(),
+                          activeColor: AppColors.darkPrimary,
+                          onChanged: (value) {
+                            setState(() {
+                              sleepQuality = value;
+                            });
+                          },
+                        ),
+                      ),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: width * 0.03,
+                          vertical: height * 0.008,
+                        ),
+                        decoration: BoxDecoration(
+                          color: AppColors.darkPrimary,
+                          borderRadius: BorderRadius.circular(width * 0.02),
+                        ),
+                        child: Text(
+                          sleepQuality.round().toString(),
+                          style: TextStyle(
+                            color: AppColors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: width * 0.04,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  SizedBox(height: height * 0.02),
+                  _buildCheckboxTile("Experiencing Fatigue", fatigue, (val) => setState(() => fatigue = val!)),
+                  _buildCheckboxTile("Able to Do Daily Activities", ableToDoActivities, (val) => setState(() => ableToDoActivities = val!)),
+                ],
+              ),
+            ),
+
+            SizedBox(height: height * 0.025),
+
+            // Fluid Status Indicators
+            _buildSectionCard(
+              context: context,
+              icon: Icons.water_drop,
+              title: "Fluid Status",
+              color: AppStatusColors.warning,
+              child: Column(
+                children: [
+                  _buildCheckboxTile("Breathlessness", breathlessness, (val) => setState(() => breathlessness = val!)),
+                  _buildCheckboxTile("Foot Swelling", footSwelling, (val) => setState(() => footSwelling = val!)),
+                  _buildCheckboxTile("Facial Puffiness", facialPuffiness, (val) => setState(() => facialPuffiness = val!)),
+                  _buildCheckboxTile("Rapid Weight Gain", rapidWeightGain, (val) => setState(() => rapidWeightGain = val!)),
+                  _buildCheckboxTile("Feeling Fluid Overload", fluidOverloadFeeling, (val) => setState(() => fluidOverloadFeeling = val!)),
+                ],
+              ),
+            ),
+
+            SizedBox(height: height * 0.025),
+
+            // Vitals - Blood Pressure & Weight
+            _buildSectionCard(
+              context: context,
+              icon: Icons.monitor_heart,
+              title: "Vital Signs",
               color: AppColors.darkPrimary,
               child: Column(
                 children: [
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          context: context,
-                          controller: fillVolume,
-                          label: "Fill Volume",
-                          hint: "ml",
-                          icon: Icons.water_drop_outlined,
-                          keyboardType: TextInputType.number,
+                  _buildCheckboxTile("Blood Pressure Measured", bpMeasured, (val) => setState(() => bpMeasured = val!)),
+                  if (bpMeasured) ...[
+                    SizedBox(height: height * 0.015),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: _buildTextField(
+                            context: context,
+                            controller: sbpController,
+                            label: "Systolic BP",
+                            hint: "e.g., 120",
+                            icon: Icons.favorite,
+                            keyboardType: TextInputType.number,
+                          ),
                         ),
-                      ),
-                      SizedBox(width: width * 0.03),
-                      Expanded(
-                        child: _buildTextField(
-                          context: context,
-                          controller: drainVolume,
-                          label: "Drain Volume",
-                          hint: "ml",
-                          icon: Icons.water_drop_outlined,
-                          keyboardType: TextInputType.number,
+                        SizedBox(width: width * 0.03),
+                        Expanded(
+                          child: _buildTextField(
+                            context: context,
+                            controller: dbpController,
+                            label: "Diastolic BP",
+                            hint: "e.g., 80",
+                            icon: Icons.favorite_border,
+                            keyboardType: TextInputType.number,
+                          ),
                         ),
-                      ),
-                    ],
-                  ),
+                      ],
+                    ),
+                  ],
                   SizedBox(height: height * 0.02),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          context: context,
-                          controller: fillTime,
-                          label: "Fill Time",
-                          hint: "mins",
-                          icon: Icons.timer_outlined,
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      SizedBox(width: width * 0.03),
-                      Expanded(
-                        child: _buildTextField(
-                          context: context,
-                          controller: drainTime,
-                          label: "Drain Time",
-                          hint: "mins",
-                          icon: Icons.timer_outlined,
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
-                  ),
+                  _buildCheckboxTile("Weight Measured", weightMeasured, (val) => setState(() => weightMeasured = val!)),
+                  if (weightMeasured) ...[
+                    SizedBox(height: height * 0.015),
+                    _buildTextField(
+                      context: context,
+                      controller: weightKgController,
+                      label: "Weight (kg)",
+                      hint: "e.g., 68.5",
+                      icon: Icons.scale,
+                      keyboardType: TextInputType.numberWithOptions(decimal: true),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            SizedBox(height: height * 0.025),
+
+            // Dialysis-Specific Issues
+            _buildSectionCard(
+              context: context,
+              icon: Icons.medical_services,
+              title: "Dialysis-Specific Issues",
+              color: AppStatusColors.error,
+              child: Column(
+                children: [
+                  _buildCheckboxTile("Pain During Fill/Drain", painDuringFillDrain, (val) => setState(() => painDuringFillDrain = val!)),
+                  _buildCheckboxTile("Slow Drain", slowDrain, (val) => setState(() => slowDrain = val!)),
+                  _buildCheckboxTile("Catheter Leak", catheterLeak, (val) => setState(() => catheterLeak = val!)),
+                  _buildCheckboxTile("Exit Site Issue", exitSiteIssue, (val) => setState(() => exitSiteIssue = val!)),
                   SizedBox(height: height * 0.02),
-                  _buildTextField(
+                  _buildDropdownField(
                     context: context,
-                    controller: bp,
-                    label: "Blood Pressure",
-                    hint: "e.g., 120/80",
-                    icon: Icons.monitor_heart_outlined,
-                  ),
-                  SizedBox(height: height * 0.02),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          context: context,
-                          controller: weightPre,
-                          label: "Weight (Before)",
-                          hint: "kg",
-                          icon: Icons.scale_outlined,
-                          keyboardType: TextInputType.numberWithOptions(decimal: true),
-                        ),
-                      ),
-                      SizedBox(width: width * 0.03),
-                      Expanded(
-                        child: _buildTextField(
-                          context: context,
-                          controller: weightPost,
-                          label: "Weight (After)",
-                          hint: "kg",
-                          icon: Icons.scale_outlined,
-                          keyboardType: TextInputType.numberWithOptions(decimal: true),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: height * 0.02),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _buildTextField(
-                          context: context,
-                          controller: exchanges,
-                          label: "Exchanges",
-                          hint: "count",
-                          icon: Icons.repeat_rounded,
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                      SizedBox(width: width * 0.03),
-                      Expanded(
-                        child: _buildTextField(
-                          context: context,
-                          controller: duration,
-                          label: "Duration",
-                          hint: "mins",
-                          icon: Icons.access_time_rounded,
-                          keyboardType: TextInputType.number,
-                        ),
-                      ),
-                    ],
+                    label: "Effluent Clarity",
+                    value: effluentClarity,
+                    items: ["clear", "cloudy", "bloody"],
+                    onChanged: (val) => setState(() => effluentClarity = val!),
                   ),
                 ],
+              ),
+            ),
+
+            SizedBox(height: height * 0.025),
+
+            // Urine Output
+            _buildSectionCard(
+              context: context,
+              icon: Icons.local_drink,
+              title: "Urine Output",
+              color: AppStatusColors.info,
+              child: Column(
+                children: [
+                  _buildCheckboxTile("Urine Passed", urinePassed, (val) => setState(() => urinePassed = val!)),
+                  if (urinePassed) ...[
+                    SizedBox(height: height * 0.015),
+                    _buildDropdownField(
+                      context: context,
+                      label: "Urine Amount",
+                      value: urineAmount,
+                      items: ["normal", "reduced", "increased", "none"],
+                      onChanged: (val) => setState(() => urineAmount = val!),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            SizedBox(height: height * 0.025),
+
+            // Red Flags
+            _buildSectionCard(
+              context: context,
+              icon: Icons.warning,
+              title: "⚠️ Warning Signs",
+              color: Colors.red,
+              child: Column(
+                children: [
+                  _buildCheckboxTile("Fever", fever, (val) => setState(() => fever = val!)),
+                  _buildCheckboxTile("Chills", chills, (val) => setState(() => chills = val!)),
+                  _buildCheckboxTile("New Abdominal Pain", newAbdominalPain, (val) => setState(() => newAbdominalPain = val!)),
+                  _buildCheckboxTile("Suddenly Feeling Unwell", suddenUnwell, (val) => setState(() => suddenUnwell = val!)),
+                ],
+              ),
+            ),
+
+            SizedBox(height: height * 0.025),
+
+            // Comments
+            _buildSectionCard(
+              context: context,
+              icon: Icons.comment,
+              title: "Additional Comments",
+              color: AppStatusColors.verified,
+              child: _buildTextField(
+                context: context,
+                controller: commentsController,
+                label: "Comments",
+                hint: "Share any additional observations or concerns...",
+                maxLines: 4,
+                icon: Icons.chat_bubble_outline,
               ),
             ),
 
@@ -251,7 +436,9 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
                       width: double.infinity,
                       decoration: BoxDecoration(
                         borderRadius: BorderRadius.circular(width * 0.03),
-                        border: Border.all(color: AppColors.darkPrimary.withOpacity(0.3), width: 2),
+                        border: Border.all(
+                            color: AppColors.darkPrimary.withOpacity(0.3),
+                            width: 2),
                         image: DecorationImage(
                           image: kIsWeb
                               ? MemoryImage(webImage!) as ImageProvider
@@ -297,7 +484,8 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
                   SizedBox(height: height * 0.02),
                   OutlinedButton.icon(
                     onPressed: () async {
-                      final picked = await ImagePicker().pickImage(source: ImageSource.gallery);
+                      final picked = await ImagePicker()
+                          .pickImage(source: ImageSource.gallery);
                       if (picked != null) {
                         if (kIsWeb) {
                           final bytes = await picked.readAsBytes();
@@ -312,11 +500,14 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
                       }
                     },
                     icon: Icon(
-                        (selectedImage == null && webImage == null) ? Icons.add_a_photo : Icons.edit,
-                        size: width * 0.045
-                    ),
+                        (selectedImage == null && webImage == null)
+                            ? Icons.add_a_photo
+                            : Icons.edit,
+                        size: width * 0.045),
                     label: Text(
-                      (selectedImage == null && webImage == null) ? "Add Photo" : "Change Photo",
+                      (selectedImage == null && webImage == null)
+                          ? "Add Photo"
+                          : "Change Photo",
                       style: TextStyle(
                         fontSize: width * 0.038,
                         fontWeight: FontWeight.w600,
@@ -354,6 +545,10 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
                 child: ElevatedButton.icon(
                   onPressed: () async {
                     /// 1. Upload image (if selected)
+                    if(selectedImage == null)
+                      {
+                        print("Null image selected");
+                      }
                     if (selectedImage != null) {
                       await controller.uploadDialysisImage(
                         widget.sessionId,
@@ -361,50 +556,79 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
                       );
                     }
 
-                    /// 2. Finish dialysis (main API)
+                    /// 2. Prepare symptoms data according to new API structure
+                    final symptomsData = {
+                      "sessionId": widget.sessionId,
+                      "symptoms": {
+                        "wellbeing": wellbeing.round(),
+                        "appetite": appetite,
+                        "nausea": nausea,
+                        "vomiting": vomiting,
+                        "abdominalDiscomfort": abdominalDiscomfort,
+                        "constipation": constipation,
+                        "diarrhea": diarrhea,
+                        "sleepQuality": sleepQuality.round(),
+                        "fatigue": fatigue,
+                        "ableToDoActivities": ableToDoActivities,
+                        "breathlessness": breathlessness,
+                        "footSwelling": footSwelling,
+                        "facialPuffiness": facialPuffiness,
+                        "rapidWeightGain": rapidWeightGain,
+                        "bpMeasured": bpMeasured,
+                        if (bpMeasured) "sbp": int.tryParse(sbpController.text) ?? 0,
+                        if (bpMeasured) "dbp": int.tryParse(dbpController.text) ?? 0,
+                        "weightMeasured": weightMeasured,
+                        if (weightMeasured) "weightKg": double.tryParse(weightKgController.text) ?? 0.0,
+                        "painDuringFillDrain": painDuringFillDrain,
+                        "slowDrain": slowDrain,
+                        "catheterLeak": catheterLeak,
+                        "exitSiteIssue": exitSiteIssue,
+                        "effluentClarity": effluentClarity,
+                        "urinePassed": urinePassed,
+                        "urineAmount": urineAmount,
+                        "fluidOverloadFeeling": fluidOverloadFeeling,
+                        "fever": fever,
+                        "chills": chills,
+                        "newAbdominalPain": newAbdominalPain,
+                        "suddenUnwell": suddenUnwell,
+                        "comments": commentsController.text,
+                      }
+                    };
+
+                    /// 3. Finish dialysis (main API)
                     final success = await controller.finishDialysisDay(
                       widget.sessionId,
-                      {
-                        "feelingOk": feelingOk,
-                        "fever": fever,
-                        "comment": comment.text,
-                        "fillVolume": fillVolume.text,
-                        "drainVolume": drainVolume.text,
-                        "fillTime": fillTime.text,
-                        "drainTime": drainTime.text,
-                        "bloodPressure": bp.text,
-                        "weightPre": weightPre.text,
-                        "weightPost": weightPost.text,
-                        "numberOfExchanges": int.tryParse(exchanges.text) ?? 0,
-                        "durationMinutes": int.tryParse(duration.text) ?? 0,
-                      },
+                      symptomsData,
                     );
 
                     if (success) {
-                      /// 3. Show success snackbar
+                      /// 4. Show success snackbar
                       Get.snackbar(
                         "Success",
-                        "Dialysis Completed Successfully",
+                        "Dialysis Session Completed Successfully",
                         snackPosition: SnackPosition.BOTTOM,
                         backgroundColor: AppStatusColors.verified,
                         colorText: AppColors.white,
-                        icon: Icon(Icons.check_circle, color: AppColors.white),
+                        icon: Icon(Icons.check_circle,
+                            color: AppColors.white),
                       );
 
-                      // 2️⃣ Refresh data FIRST
-                      final controller = Get.find<PatientPanelController>();
-                      await controller.fetchMaterialSessionDetails(widget.MaterialSessionId);
+                      /// 5. Refresh data
+                      await controller.fetchMaterialSessionDetails(
+                          widget.MaterialSessionId);
 
+                      /// 6. Navigate back
                       Get.offNamedUntil(
                         RouteHelper.getPatientMaterialSessionDetails(
-                            widget.MaterialSessionId,
-                            widget.patientId
-                        ),
-                            (route) => route.settings.name == RouteHelper.patientMaterialSessionDetails,
+                            widget.MaterialSessionId, widget.patientId),
+                            (route) =>
+                        route.settings.name ==
+                            RouteHelper.patientMaterialSessionDetails,
                       );
                     }
                   },
-                  icon: Icon(Icons.check_circle_outline_rounded, size: width * 0.06),
+                  icon: Icon(Icons.check_circle_outline_rounded,
+                      size: width * 0.06),
                   label: Text(
                     "Complete Session",
                     style: TextStyle(
@@ -416,7 +640,8 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
                     backgroundColor: AppStatusColors.verified,
                     foregroundColor: AppColors.white,
                     elevation: 4,
-                    shadowColor: AppStatusColors.verified.withOpacity(0.4),
+                    shadowColor:
+                    AppStatusColors.verified.withOpacity(0.4),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(width * 0.03),
                     ),
@@ -477,12 +702,14 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
                   child: Icon(icon, color: color, size: width * 0.055),
                 ),
                 SizedBox(width: width * 0.03),
-                Text(
-                  title,
-                  style: TextStyle(
-                    fontSize: width * 0.043,
-                    fontWeight: FontWeight.bold,
-                    color: AppColors.black,
+                Expanded(
+                  child: Text(
+                    title,
+                    style: TextStyle(
+                      fontSize: width * 0.043,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                    ),
                   ),
                 ),
               ],
@@ -497,97 +724,73 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
     );
   }
 
-  Widget _buildWellnessQuestion(BuildContext context, String question, String value, Function(String?) onChanged) {
+  Widget _buildCheckboxTile(
+      String label, bool value, Function(bool?) onChanged) {
     final width = MediaQuery.of(context).size.width;
-    final height = MediaQuery.of(context).size.height;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          question,
-          style: TextStyle(
-            fontSize: width * 0.038,
-            fontWeight: FontWeight.w600,
-            color: AppColors.black,
-          ),
+    return CheckboxListTile(
+      title: Text(
+        label,
+        style: TextStyle(
+          fontSize: width * 0.038,
+          fontWeight: FontWeight.w500,
+          color: AppColors.black,
         ),
-        SizedBox(height: height * 0.012),
-        Row(
-          children: [
-            Expanded(
-              child: _buildOptionButton(
-                context,
-                "Yes",
-                "yes",
-                value,
-                onChanged,
-                AppStatusColors.verified,
-              ),
-            ),
-            SizedBox(width: width * 0.03),
-            Expanded(
-              child: _buildOptionButton(
-                context,
-                "No",
-                "no",
-                value,
-                onChanged,
-                AppStatusColors.error,
-              ),
-            ),
-          ],
-        ),
-      ],
+      ),
+      value: value,
+      onChanged: onChanged,
+      activeColor: AppColors.darkPrimary,
+      contentPadding: EdgeInsets.zero,
+      controlAffinity: ListTileControlAffinity.leading,
     );
   }
 
-  Widget _buildOptionButton(
-      BuildContext context,
-      String label,
-      String optionValue,
-      String currentValue,
-      Function(String?) onChanged,
-      Color color,
-      ) {
-    final isSelected = currentValue == optionValue;
+  Widget _buildDropdownField({
+    required BuildContext context,
+    required String label,
+    required String value,
+    required List<String> items,
+    required Function(String?) onChanged,
+  }) {
     final width = MediaQuery.of(context).size.width;
-    final height = MediaQuery.of(context).size.height;
 
-    return InkWell(
-      onTap: () => onChanged(optionValue),
-      borderRadius: BorderRadius.circular(width * 0.025),
-      child: Container(
-        padding: EdgeInsets.symmetric(vertical: height * 0.016),
-        decoration: BoxDecoration(
-          color: isSelected ? color.withOpacity(0.12) : AppColors.lightGrey,
-          border: Border.all(
-            color: isSelected ? color : AppColors.mediumGrey.withOpacity(0.5),
-            width: isSelected ? 2.5 : 1.5,
-          ),
-          borderRadius: BorderRadius.circular(width * 0.025),
+    return DropdownButtonFormField<String>(
+      value: value,
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: TextStyle(
+          fontSize: width * 0.036,
+          color: AppColors.darkGrey,
+          fontWeight: FontWeight.w500,
         ),
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            if (isSelected)
-              Icon(
-                Icons.check_circle,
-                color: color,
-                size: width * 0.045,
-              ),
-            if (isSelected) SizedBox(width: width * 0.015),
-            Text(
-              label,
-              style: TextStyle(
-                color: isSelected ? color : AppColors.darkGrey,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.w600,
-                fontSize: width * 0.04,
-              ),
-            ),
-          ],
+        filled: true,
+        fillColor: AppColors.lightGrey,
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(width * 0.025),
+          borderSide: BorderSide(color: AppColors.mediumGrey.withOpacity(0.3)),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(width * 0.025),
+          borderSide: BorderSide(
+            color: AppColors.mediumGrey.withOpacity(0.3),
+            width: 1.5,
+          ),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(width * 0.025),
+          borderSide: BorderSide(color: AppColors.darkPrimary, width: 2),
         ),
       ),
+      items: items.map((item) {
+        return DropdownMenuItem(
+          value: item,
+          child: Text(
+            item.capitalizeFirst!,
+            style: TextStyle(fontSize: width * 0.038),
+          ),
+        );
+      }).toList(),
+      onChanged: onChanged,
     );
   }
 

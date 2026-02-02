@@ -44,7 +44,7 @@ class _LoginPageState extends State<LoginPage> {
 
                     // Title
                     Text(
-                      "Welcome Back",
+                      "PD EXCHANGE",
                       style: TextStyle(
                         fontFamily: "Poppins",
                         fontSize: w * 0.065,

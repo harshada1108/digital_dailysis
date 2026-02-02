@@ -2,6 +2,7 @@ import 'package:digitaldailysis/pages/patient/VideoPlayerScreen.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 import '../../controllers/patient_panel_controller.dart';
 import '../../utils/colors.dart';
@@ -42,7 +43,7 @@ class PatientHomeScreen extends StatelessWidget {
     final h = size.height;
 
     return DefaultTabController(
-      length: 2,
+      length: 3,
       child: Scaffold(
         backgroundColor: AppColors.lightGrey,
         appBar: AppBar(
@@ -62,7 +63,7 @@ class PatientHomeScreen extends StatelessWidget {
             labelColor: AppColors.white,
             unselectedLabelColor: AppColors.white.withOpacity(0.6),
             labelStyle: TextStyle(
-              fontSize: w * 0.04,
+              fontSize: w * 0.035,
               fontWeight: FontWeight.w600,
             ),
             tabs: const [
@@ -73,6 +74,10 @@ class PatientHomeScreen extends StatelessWidget {
               Tab(
                 icon: Icon(Icons.school_outlined),
                 text: 'My Lectures',
+              ),
+              Tab(
+                icon: Icon(Icons.contact_phone_outlined),
+                text: 'Emergency',
               ),
             ],
           ),
@@ -96,6 +101,9 @@ class PatientHomeScreen extends StatelessWidget {
 
               // ================= MY LECTURES TAB =================
               _buildLecturesTab(context, w, h, patient),
+
+              // ================= EMERGENCY CONTACTS TAB =================
+              _buildEmergencyContactsTab(context, w, h),
             ],
           );
         }),
@@ -424,6 +432,301 @@ class PatientHomeScreen extends StatelessWidget {
     );
   }
 
+  // ================= EMERGENCY CONTACTS TAB =================
+  Widget _buildEmergencyContactsTab(
+      BuildContext context,
+      double w,
+      double h,
+      ) {
+    // TODO: Replace with actual data from controller/backend
+    final emergencyContacts = _getEmergencyContacts();
+
+    return SingleChildScrollView(
+      padding: EdgeInsets.all(w * 0.05),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // ================= EMERGENCY BANNER =================
+          Container(
+            padding: EdgeInsets.all(w * 0.05),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [
+                  Colors.red.shade700,
+                  Colors.red.shade600,
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+              borderRadius: BorderRadius.circular(w * 0.04),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.red.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: EdgeInsets.all(w * 0.03),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Icon(
+                    Icons.emergency,
+                    color: Colors.red.shade700,
+                    size: w * 0.08,
+                  ),
+                ),
+                SizedBox(width: w * 0.04),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Emergency Contacts',
+                        style: TextStyle(
+                          fontSize: w * 0.05,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                      SizedBox(height: h * 0.005),
+                      Text(
+                        'Quick access to your medical team',
+                        style: TextStyle(
+                          fontSize: w * 0.038,
+                          color: Colors.white.withOpacity(0.95),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          SizedBox(height: h * 0.03),
+
+          // ================= CONTACT CARDS =================
+          ...emergencyContacts.map((contact) {
+            return _buildContactCard(context, w, h, contact);
+          }).toList(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildContactCard(
+      BuildContext context,
+      double w,
+      double h,
+      Map<String, String> contact,
+      ) {
+    return Container(
+      margin: EdgeInsets.only(bottom: h * 0.018),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(w * 0.04),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.08),
+            blurRadius: 12,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(w * 0.045),
+        child: Row(
+          children: [
+            // Doctor Avatar
+            Container(
+              width: w * 0.15,
+              height: w * 0.15,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    AppColors.darkPrimary,
+                    AppColors.darkPrimary.withOpacity(0.8),
+                  ],
+                ),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.person,
+                color: Colors.white,
+                size: w * 0.08,
+              ),
+            ),
+            SizedBox(width: w * 0.04),
+
+            // Doctor Info
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    contact['name']!,
+                    style: TextStyle(
+                      fontSize: w * 0.045,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.black,
+                    ),
+                  ),
+                  SizedBox(height: h * 0.004),
+                  Text(
+                    contact['specialty']!,
+                    style: TextStyle(
+                      fontSize: w * 0.038,
+                      color: AppColors.darkGrey,
+                    ),
+                  ),
+                  SizedBox(height: h * 0.006),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.phone,
+                        size: w * 0.035,
+                        color: AppColors.darkPrimary,
+                      ),
+                      SizedBox(width: w * 0.015),
+                      Text(
+                        contact['phone']!,
+                        style: TextStyle(
+                          fontSize: w * 0.038,
+                          color: AppColors.darkPrimary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                  if (contact['availability'] != null) ...[
+                    SizedBox(height: h * 0.004),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.access_time,
+                          size: w * 0.035,
+                          color: AppColors.darkGrey,
+                        ),
+                        SizedBox(width: w * 0.015),
+                        Text(
+                          contact['availability']!,
+                          style: TextStyle(
+                            fontSize: w * 0.033,
+                            color: AppColors.darkGrey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
+            // Call Button
+            InkWell(
+              onTap: () => _makePhoneCall(contact['phone']!),
+              borderRadius: BorderRadius.circular(w * 0.03),
+              child: Container(
+                padding: EdgeInsets.all(w * 0.035),
+                decoration: BoxDecoration(
+                  color: Colors.green,
+                  borderRadius: BorderRadius.circular(w * 0.03),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.green.withOpacity(0.3),
+                      blurRadius: 8,
+                      offset: const Offset(0, 2),
+                    ),
+                  ],
+                ),
+                child: Icon(
+                  Icons.call,
+                  color: Colors.white,
+                  size: w * 0.06,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // ================= PHONE CALL FUNCTION =================
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    final Uri phoneUri = Uri(
+      scheme: 'tel',
+      path: phoneNumber,
+    );
+
+    try {
+      if (await canLaunchUrl(phoneUri)) {
+        await launchUrl(phoneUri);
+      } else {
+        Get.snackbar(
+          'Error',
+          'Unable to make phone call',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 3),
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Error',
+        'Failed to initiate call: $e',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: Colors.red,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 3),
+      );
+    }
+  }
+
+  // ================= DUMMY EMERGENCY CONTACTS =================
+  List<Map<String, String>> _getEmergencyContacts() {
+    // TODO: Replace with actual data from backend
+    return [
+      {
+        'name': 'Dr. Sarah Johnson',
+        'specialty': 'Nephrologist',
+        'phone': '+1234567890',
+        'availability': 'Available 24/7',
+      },
+      {
+        'name': 'Dr. Michael Chen',
+        'specialty': 'Dialysis Specialist',
+        'phone': '+1234567891',
+        'availability': 'Mon-Fri, 9 AM - 6 PM',
+      },
+      {
+        'name': 'Dr. Emily Rodriguez',
+        'specialty': 'Emergency Care Physician',
+        'phone': '+1234567892',
+        'availability': 'Available 24/7',
+      },
+      {
+        'name': 'Nurse Mary Williams',
+        'specialty': 'Dialysis Care Coordinator',
+        'phone': '+1234567893',
+        'availability': 'Mon-Sat, 8 AM - 8 PM',
+      },
+      {
+        'name': 'Hospital Emergency',
+        'specialty': 'Emergency Department',
+        'phone': '911',
+        'availability': 'Available 24/7',
+      },
+    ];
+  }
+
   Widget _buildContentSection(
       BuildContext context,
       double w,
@@ -609,19 +912,29 @@ class PatientHomeScreen extends StatelessWidget {
 
   void _launchURL(String url) async {
     final uri = Uri.parse(url);
-    // For now, show a message. In production, use url_launcher package
-    Get.snackbar(
-      'Opening Content',
-      'This will open in your browser',
-      snackPosition: SnackPosition.BOTTOM,
-      backgroundColor: AppColors.darkPrimary,
-      colorText: Colors.white,
-      duration: const Duration(seconds: 2),
-    );
-    // TODO: Uncomment when url_launcher is added
-    // if (await canLaunchUrl(uri)) {
-    //   await launchUrl(uri, mode: LaunchMode.externalApplication);
-    // }
+    try {
+      if (await canLaunchUrl(uri)) {
+        await launchUrl(uri, mode: LaunchMode.externalApplication);
+      } else {
+        Get.snackbar(
+          'Error',
+          'Unable to open URL',
+          snackPosition: SnackPosition.BOTTOM,
+          backgroundColor: Colors.red,
+          colorText: Colors.white,
+          duration: const Duration(seconds: 2),
+        );
+      }
+    } catch (e) {
+      Get.snackbar(
+        'Opening Content',
+        'This will open in your browser',
+        snackPosition: SnackPosition.BOTTOM,
+        backgroundColor: AppColors.darkPrimary,
+        colorText: Colors.white,
+        duration: const Duration(seconds: 2),
+      );
+    }
   }
 
   Map<String, List<Map<String, String>>> _getDummyLectures() {

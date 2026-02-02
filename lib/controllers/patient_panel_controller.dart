@@ -124,9 +124,10 @@ class PatientPanelController extends GetxController  implements GetxService {
       final url = "${AppConstants.BASE_URL}/api/upload/finish-dialysis-session";
 
       final body = {
-        "sessionId": sessionId,
-        ...formData,
+        ...formData
       };
+      print("printing dailysis body");
+      print(body);
 
       final response = await apiClient.patchData(url, body);
 
@@ -138,6 +139,7 @@ class PatientPanelController extends GetxController  implements GetxService {
         return true;
       } else {
         print("Eroorrrr");
+        print(response.body);
         customSnackBar("Finish failed: ${response.body}");
         return false;
       }
@@ -164,6 +166,7 @@ class PatientPanelController extends GetxController  implements GetxService {
       );
 
       if (response.statusCode == 200) {
+        print("Uploaded image");
         customSnackBar("Image Uploaded", isError: false);
         return true;
       } else {

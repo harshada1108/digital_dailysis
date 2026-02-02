@@ -1,3 +1,5 @@
+// lib/pages/patient/material_session_details.dart
+import 'package:digitaldailysis/pages/patient/dialysis_session_details_page.dart';
 import 'package:digitaldailysis/routes/route_helper.dart';
 import 'package:digitaldailysis/utils/colors.dart';
 import 'package:flutter/material.dart';
@@ -5,9 +7,6 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import '../../controllers/patient_panel_controller.dart';
 import 'day_details_page.dart';
-
-// Add these status colors to your AppColors class
-
 
 class MaterialSessionDetailsPage extends StatefulWidget {
   final String sessionId;
@@ -20,16 +19,19 @@ class MaterialSessionDetailsPage extends StatefulWidget {
   });
 
   @override
-  State<MaterialSessionDetailsPage> createState() => _MaterialSessionDetailsPageState();
+  State<MaterialSessionDetailsPage> createState() =>
+      _MaterialSessionDetailsPageState();
 }
 
-class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage> {
+class _MaterialSessionDetailsPageState
+    extends State<MaterialSessionDetailsPage> {
   @override
   void initState() {
     super.initState();
-    // Fetch fresh data when page loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      final controller = Get.find<PatientPanelController>(tag: widget.patientId);
+      final controller =
+      Get.find<PatientPanelController>(tag: widget.patientId);
+      // print("In patients panel");
       controller.fetchMaterialSessionDetails(widget.sessionId);
     });
   }
@@ -75,7 +77,8 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.error_outline, size: 64, color: AppStatusColors.error),
+                Icon(Icons.error_outline,
+                    size: 64, color: AppStatusColors.error),
                 SizedBox(height: 16),
                 Text(
                   "Session not found",
@@ -101,20 +104,25 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
           );
         }
 
-        final stats = _calculateStats(session);
-
+        final stats = _calculateStats(session.materialSession);
+        final canStartNew = _canStartNewSession(session.materialSession);
         return SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildStatusHeader(session, screenWidth),
+              _buildStatusHeader(session.materialSession, screenWidth),
               _buildStatsCard(stats, screenWidth),
-              _buildMaterialsSection(session, screenWidth),
-              if (session.materialSession.materialImages != null && session.materialSession.materialImages.isNotEmpty)
-                _buildMaterialImagesSection(session.materialSession.materialImages, screenWidth),
-              _buildDaysSection(session, controller, screenWidth),
+              if (canStartNew)
+                _buildStartSessionButton(context, session.materialSession, screenWidth, screenHeight),
+              _buildMaterialsSection(session.materialSession, screenWidth),
+              if (session.materialSession.materialImages != null &&
+                  session.materialSession.materialImages.isNotEmpty)
+                _buildMaterialImagesSection(
+                    session.materialSession.materialImages, screenWidth),
+              _buildDialysisSessionsSection(session.materialSession, screenWidth, screenHeight),
               if (session.materialSession.status != "acknowledged")
-                _buildAcknowledgeButton(context, controller, widget.sessionId, screenWidth, screenHeight),
+                _buildAcknowledgeButton(
+                    context, controller, widget.sessionId, screenWidth, screenHeight),
               SizedBox(height: screenWidth * 0.04),
             ],
           ),
@@ -123,6 +131,64 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
     );
   }
 
+  // Add this method to check if new session can be started
+  bool _canStartNewSession(dynamic session) {
+    final remaining = session.remainingSessions ?? 0;
+    final dialysisSessions = session.dialysisSessions ?? [];
+
+    // Check if there are remaining sessions
+    if (remaining <= 0) return false;
+
+    // Check if session is acknowledged
+    if (session.status != "acknowledged") return false;
+
+    // Check if there's no active session
+    // final hasActiveSession = dialysisSessions.any((s) => s.status == "active");
+    // if (hasActiveSession) return false;
+
+    return true;
+  }
+
+// Add this method to build the Start Session button
+  Widget _buildStartSessionButton(
+      BuildContext context,
+      dynamic session,
+      double screenWidth,
+      double screenHeight) {
+    return Container(
+      margin: EdgeInsets.all(screenWidth * 0.04),
+      width: double.infinity,
+      child: ElevatedButton.icon(
+        onPressed: () {
+          // Navigate to DayVoluntaryScreen
+          Get.toNamed(
+            "/day-voluntary",
+            parameters: {
+              'id': session.materialSessionId,
+              'day': '${(session.completedSessions ?? 0) + 1}', // Next session number
+            },
+          );
+        },
+        icon: Icon(Icons.play_circle_filled, size: screenWidth * 0.055),
+        label: Text(
+          "Start New Dialysis Session",
+          style: TextStyle(
+            fontSize: screenWidth * 0.042,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppStatusColors.success,
+          foregroundColor: AppColors.white,
+          padding: EdgeInsets.symmetric(vertical: screenHeight * 0.022),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(screenWidth * 0.03),
+          ),
+          elevation: 4,
+        ),
+      ),
+    );
+  }
   Widget _buildStatusHeader(dynamic session, double screenWidth) {
     Color statusColor;
     IconData statusIcon;
@@ -150,7 +216,10 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
       padding: EdgeInsets.all(screenWidth * 0.05),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          colors: [AppColors.darkPrimary, AppColors.darkPrimary.withOpacity(0.8)],
+          colors: [
+            AppColors.darkPrimary,
+            AppColors.darkPrimary.withOpacity(0.8)
+          ],
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
         ),
@@ -166,7 +235,8 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
             decoration: BoxDecoration(
               color: statusColor.withOpacity(0.2),
               borderRadius: BorderRadius.circular(screenWidth * 0.06),
-              border: Border.all(color: statusColor.withOpacity(0.5), width: 1.5),
+              border:
+              Border.all(color: statusColor.withOpacity(0.5), width: 1.5),
             ),
             child: Row(
               mainAxisSize: MainAxisSize.min,
@@ -205,10 +275,13 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
     );
   }
 
-  Widget _buildInfoRow(IconData icon, String label, String value, double screenWidth) {
+  Widget _buildInfoRow(
+      IconData icon, String label, String value, double screenWidth) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.white.withOpacity(0.8), size: screenWidth * 0.045),
+        Icon(icon,
+            color: AppColors.white.withOpacity(0.8),
+            size: screenWidth * 0.045),
         SizedBox(width: screenWidth * 0.02),
         Text(
           "$label: ",
@@ -252,7 +325,8 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
                       color: AppColors.darkPrimary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(screenWidth * 0.02),
                     ),
-                    child: Icon(Icons.bar_chart, color: AppColors.darkPrimary, size: screenWidth * 0.06),
+                    child: Icon(Icons.bar_chart,
+                        color: AppColors.darkPrimary, size: screenWidth * 0.06),
                   ),
                   SizedBox(width: screenWidth * 0.03),
                   Text(
@@ -270,9 +344,9 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
                 children: [
                   Expanded(
                     child: _buildStatItem(
-                      "Total Days",
+                      "Total Sessions",
                       "${stats['total']}",
-                      Icons.calendar_today,
+                      Icons.medical_services,
                       AppColors.darkPrimary,
                       screenWidth,
                     ),
@@ -294,19 +368,19 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
                 children: [
                   Expanded(
                     child: _buildStatItem(
-                      "Active",
-                      "${stats['active']}",
-                      Icons.pending,
-                      AppStatusColors.active,
+                      "Verified",
+                      "${stats['verified']}",
+                      Icons.verified,
+                      AppStatusColors.success,
                       screenWidth,
                     ),
                   ),
                   SizedBox(width: screenWidth * 0.03),
                   Expanded(
                     child: _buildStatItem(
-                      "Pending",
-                      "${stats['pending']}",
-                      Icons.hourglass_empty,
+                      "Remaining",
+                      "${stats['remaining']}",
+                      Icons.pending_actions,
                       AppStatusColors.pending,
                       screenWidth,
                     ),
@@ -317,9 +391,12 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
               ClipRRect(
                 borderRadius: BorderRadius.circular(screenWidth * 0.02),
                 child: LinearProgressIndicator(
-                  value: stats['total'] > 0 ? stats['completed'] / stats['total'] : 0,
+                  value: stats['total'] > 0
+                      ? stats['completed'] / stats['total']
+                      : 0,
                   backgroundColor: AppColors.lightGrey,
-                  valueColor: AlwaysStoppedAnimation<Color>(AppStatusColors.verified),
+                  valueColor:
+                  AlwaysStoppedAnimation<Color>(AppStatusColors.verified),
                   minHeight: screenWidth * 0.025,
                 ),
               ),
@@ -339,7 +416,8 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
     );
   }
 
-  Widget _buildStatItem(String label, String value, IconData icon, Color color, double screenWidth) {
+  Widget _buildStatItem(String label, String value, IconData icon, Color color,
+      double screenWidth) {
     return Container(
       padding: EdgeInsets.all(screenWidth * 0.035),
       decoration: BoxDecoration(
@@ -376,6 +454,8 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
 
   Widget _buildMaterialsSection(dynamic session, double screenWidth) {
     final materials = session.materials;
+    final pdMaterials = materials.pdMaterials;
+
     return Container(
       margin: EdgeInsets.symmetric(horizontal: screenWidth * 0.04),
       child: Card(
@@ -397,12 +477,13 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
                       color: AppColors.darkPrimary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(screenWidth * 0.02),
                     ),
-                    child: Icon(Icons.medical_services, color: AppColors.darkPrimary, size: screenWidth * 0.06),
+                    child: Icon(Icons.medical_services,
+                        color: AppColors.darkPrimary, size: screenWidth * 0.06),
                   ),
                   SizedBox(width: screenWidth * 0.03),
                   Expanded(
                     child: Text(
-                      "Materials Provided",
+                      "PD Materials Provided",
                       style: TextStyle(
                         fontSize: screenWidth * 0.048,
                         fontWeight: FontWeight.bold,
@@ -413,31 +494,101 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
                 ],
               ),
               SizedBox(height: screenWidth * 0.04),
-              _buildMaterialChip(
-                "Dialysis Machine",
-                materials.dialysisMachine.toUpperCase(),
+
+              // Sessions Count
+              _buildMaterialRow(
+                "Total Sessions",
+                "${materials.sessionsCount}",
+                Icons.event_note,
                 AppColors.darkPrimary,
                 screenWidth,
               ),
-              SizedBox(height: screenWidth * 0.03),
-              Wrap(
-                spacing: screenWidth * 0.025,
-                runSpacing: screenWidth * 0.025,
-                children: [
-                  if (materials.dialyzer)
-                    _buildMaterialChip("Dialyzer", "✓", AppStatusColors.verified, screenWidth),
-                  if (materials.bloodTubingSets)
-                    _buildMaterialChip("Blood Tubing Sets", "✓", AppStatusColors.verified, screenWidth),
-                  if (materials.dialysisNeedles)
-                    _buildMaterialChip("Dialysis Needles", "✓", AppStatusColors.verified, screenWidth),
-                  if (materials.dialysateConcentrates)
-                    _buildMaterialChip("Dialysate Concentrates", "✓", AppStatusColors.verified, screenWidth),
-                  if (materials.heparin)
-                    _buildMaterialChip("Heparin", "✓", AppStatusColors.verified, screenWidth),
-                  if (materials.salineSolution)
-                    _buildMaterialChip("Saline Solution", "✓", AppStatusColors.verified, screenWidth),
+              SizedBox(height: screenWidth * 0.02),
+
+              if (pdMaterials != null) ...[
+                // CAPD Materials
+                if (pdMaterials.capd != null) ...[
+                  _buildSubHeader("CAPD Fluids", screenWidth),
+                  SizedBox(height: screenWidth * 0.02),
+                  ...pdMaterials.capd!.entries.map((entry) {
+                    if (entry.value > 0) {
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: screenWidth * 0.02),
+                        child: _buildMaterialRow(
+                          _formatFluidName(entry.key),
+                          "${entry.value}",
+                          Icons.water_drop,
+                          AppStatusColors.info,
+                          screenWidth,
+                        ),
+                      );
+                    }
+                    return SizedBox.shrink();
+                  }).toList(),
+                  SizedBox(height: screenWidth * 0.02),
                 ],
-              ),
+
+                // APD Materials
+                if (pdMaterials.apd != null) ...[
+                  _buildSubHeader("APD Fluids", screenWidth),
+                  SizedBox(height: screenWidth * 0.02),
+                  ...pdMaterials.apd!.entries.map((entry) {
+                    if (entry.value > 0) {
+                      return Padding(
+                        padding: EdgeInsets.only(bottom: screenWidth * 0.02),
+                        child: _buildMaterialRow(
+                          _formatFluidName(entry.key),
+                          "${entry.value}",
+                          Icons.water_drop,
+                          AppStatusColors.active,
+                          screenWidth,
+                        ),
+                      );
+                    }
+                    return SizedBox.shrink();
+                  }).toList(),
+                  SizedBox(height: screenWidth * 0.02),
+                ],
+
+                // Other Supplies
+                _buildSubHeader("Other Supplies", screenWidth),
+                SizedBox(height: screenWidth * 0.02),
+                _buildMaterialRow(
+                  "Transfer Set",
+                  "${pdMaterials.transferSet}",
+                  Icons.settings_input_component,
+                  AppStatusColors.verified,
+                  screenWidth,
+                ),
+                SizedBox(height: screenWidth * 0.02),
+                _buildMaterialRow(
+                  "Icodextrin 2L",
+                  "${pdMaterials.icodextrin2L}",
+                  Icons.local_drink,
+                  AppStatusColors.verified,
+                  screenWidth,
+                ),
+                SizedBox(height: screenWidth * 0.02),
+                _buildMaterialRow(
+                  "Minicap",
+                  "${pdMaterials.minicap}",
+                  Icons.medical_services_outlined,
+                  AppStatusColors.verified,
+                  screenWidth,
+                ),
+
+                // Others (custom items)
+                if (pdMaterials.others != null) ...[
+                  SizedBox(height: screenWidth * 0.02),
+                  _buildMaterialRow(
+                    pdMaterials.others!['description'] ?? 'Other',
+                    "${pdMaterials.others!['quantity'] ?? 0}",
+                    Icons.inventory_2,
+                    AppStatusColors.warning,
+                    screenWidth,
+                  ),
+                ],
+              ],
             ],
           ),
         ),
@@ -445,60 +596,89 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
     );
   }
 
-  Widget _buildMaterialChip(String label, String value, Color color, double screenWidth) {
+  Widget _buildSubHeader(String title, double screenWidth) {
+    return Row(
+      children: [
+        Container(
+          width: 3,
+          height: screenWidth * 0.04,
+          decoration: BoxDecoration(
+            color: AppColors.darkPrimary,
+            borderRadius: BorderRadius.circular(2),
+          ),
+        ),
+        SizedBox(width: screenWidth * 0.02),
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: screenWidth * 0.04,
+            fontWeight: FontWeight.bold,
+            color: AppColors.darkPrimary,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMaterialRow(String label, String value, IconData icon,
+      Color color, double screenWidth) {
     return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: screenWidth * 0.035,
-        vertical: screenWidth * 0.025,
-      ),
+      padding: EdgeInsets.all(screenWidth * 0.03),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(screenWidth * 0.06),
-        border: Border.all(color: color.withOpacity(0.3), width: 1.5),
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(screenWidth * 0.025),
+        border: Border.all(color: color.withOpacity(0.2)),
       ),
       child: Row(
-        mainAxisSize: MainAxisSize.min,
         children: [
-          if (value == "✓")
-            Icon(Icons.check_circle, color: color, size: screenWidth * 0.045),
-          if (value == "✓") SizedBox(width: screenWidth * 0.015),
-          Flexible(
+          Icon(icon, color: color, size: screenWidth * 0.05),
+          SizedBox(width: screenWidth * 0.03),
+          Expanded(
             child: Text(
               label,
               style: TextStyle(
-                fontSize: screenWidth * 0.036,
-                fontWeight: FontWeight.w600,
+                fontSize: screenWidth * 0.038,
+                fontWeight: FontWeight.w500,
                 color: AppColors.black,
               ),
             ),
           ),
-          if (value != "✓") ...[
-            SizedBox(width: screenWidth * 0.025),
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: screenWidth * 0.025,
-                vertical: screenWidth * 0.008,
-              ),
-              decoration: BoxDecoration(
-                color: color,
-                borderRadius: BorderRadius.circular(screenWidth * 0.03),
-              ),
-              child: Text(
-                value,
-                style: TextStyle(
-                  color: AppColors.white,
-                  fontSize: screenWidth * 0.032,
-                  fontWeight: FontWeight.bold,
-                ),
+          Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: screenWidth * 0.025,
+              vertical: screenWidth * 0.01,
+            ),
+            decoration: BoxDecoration(
+              color: color,
+              borderRadius: BorderRadius.circular(screenWidth * 0.03),
+            ),
+            child: Text(
+              value,
+              style: TextStyle(
+                color: AppColors.white,
+                fontSize: screenWidth * 0.036,
+                fontWeight: FontWeight.bold,
               ),
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 
-  Widget _buildMaterialImagesSection(List<dynamic> images, double screenWidth) {
+  String _formatFluidName(String key) {
+    // Convert "fluid1_5_2L" to "1.5% (2L)"
+    final parts = key.replaceAll('fluid', '').split('_');
+    if (parts.length >= 3) {
+      final concentration = parts[0] + '.' + parts[1];
+      final volume = parts[2];
+      return "$concentration% ($volume)";
+    }
+    return key;
+  }
+
+  Widget _buildMaterialImagesSection(
+      List<dynamic> images, double screenWidth) {
     return Container(
       margin: EdgeInsets.all(screenWidth * 0.04),
       child: Card(
@@ -520,7 +700,8 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
                       color: AppColors.darkPrimary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(screenWidth * 0.02),
                     ),
-                    child: Icon(Icons.photo_library, color: AppColors.darkPrimary, size: screenWidth * 0.06),
+                    child: Icon(Icons.photo_library,
+                        color: AppColors.darkPrimary, size: screenWidth * 0.06),
                   ),
                   SizedBox(width: screenWidth * 0.03),
                   Text(
@@ -544,15 +725,16 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
                 ),
                 itemCount: images.length,
                 itemBuilder: (context, index) {
-                  final imageUrl = images[index]?.imageUrl ??
-                      images[index]?['imageUrl'] ?? '';
+                  final imageUrl =
+                      images[index]?.imageUrl ?? images[index]?['imageUrl'] ?? '';
 
                   if (imageUrl.isEmpty) {
                     return Container(
                       decoration: BoxDecoration(
                         color: AppColors.lightGrey,
                         borderRadius: BorderRadius.circular(screenWidth * 0.03),
-                        border: Border.all(color: AppColors.mediumGrey.withOpacity(0.3)),
+                        border: Border.all(
+                            color: AppColors.mediumGrey.withOpacity(0.3)),
                       ),
                       child: Icon(
                         Icons.image_not_supported,
@@ -594,7 +776,52 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
     );
   }
 
-  Widget _buildDaysSection(dynamic session, PatientPanelController controller, double screenWidth) {
+  Widget _buildDialysisSessionsSection(
+      dynamic session, double screenWidth, double screenHeight) {
+    final dialysisSessions = session.dialysisSessions ?? [];
+
+    if (dialysisSessions.isEmpty) {
+      return Container(
+        margin: EdgeInsets.all(screenWidth * 0.04),
+        child: Card(
+          elevation: 3,
+          color: AppColors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(screenWidth * 0.04),
+          ),
+          child: Padding(
+            padding: EdgeInsets.all(screenWidth * 0.06),
+            child: Center(
+              child: Column(
+                children: [
+                  Icon(Icons.event_busy,
+                      size: screenWidth * 0.15, color: AppColors.mediumGrey),
+                  SizedBox(height: screenWidth * 0.03),
+                  Text(
+                    "No Dialysis Sessions Yet",
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.042,
+                      fontWeight: FontWeight.w600,
+                      color: AppColors.darkGrey,
+                    ),
+                  ),
+                  SizedBox(height: screenWidth * 0.02),
+                  Text(
+                    "Sessions will appear here once you start dialysis",
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: screenWidth * 0.035,
+                      color: AppColors.mediumGrey,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
+
     return Container(
       margin: EdgeInsets.all(screenWidth * 0.04),
       child: Card(
@@ -616,11 +843,12 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
                       color: AppColors.darkPrimary.withOpacity(0.1),
                       borderRadius: BorderRadius.circular(screenWidth * 0.02),
                     ),
-                    child: Icon(Icons.event_note, color: AppColors.darkPrimary, size: screenWidth * 0.06),
+                    child: Icon(Icons.event_note,
+                        color: AppColors.darkPrimary, size: screenWidth * 0.06),
                   ),
                   SizedBox(width: screenWidth * 0.03),
                   Text(
-                    "Dialysis Days",
+                    "Dialysis Sessions",
                     style: TextStyle(
                       fontSize: screenWidth * 0.048,
                       fontWeight: FontWeight.bold,
@@ -630,9 +858,11 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
                 ],
               ),
               SizedBox(height: screenWidth * 0.04),
-              ...session.days.map<Widget>((day) {
-                final canStart = _canStartDay(session, day.dayNumber);
-                return _buildDayTile(session, day, canStart, screenWidth);
+              ...dialysisSessions.asMap().entries.map((entry) {
+                final index = entry.key;
+                final dialysisSession = entry.value;
+                return _buildDialysisSessionTile(
+                    dialysisSession, index + 1, screenWidth, screenHeight);
               }).toList(),
             ],
           ),
@@ -641,141 +871,210 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
     );
   }
 
-  Widget _buildDayTile(dynamic session, dynamic day, bool canStart, double screenWidth) {
+  Widget _buildDialysisSessionTile(dynamic dialysisSession, int sessionNumber,
+      double screenWidth, double screenHeight) {
     Color statusColor;
-    Color bgColor;
     IconData statusIcon;
     String statusText;
 
-    switch (day.status) {
+    switch (dialysisSession.status) {
       case "verified":
         statusColor = AppStatusColors.verified;
-        bgColor = AppStatusColors.verified.withOpacity(0.1);
         statusIcon = Icons.verified;
-        statusText = "Completed & Verified";
+        statusText = "Verified by Doctor";
         break;
       case "completed":
         statusColor = AppStatusColors.info;
-        bgColor = AppStatusColors.info.withOpacity(0.1);
         statusIcon = Icons.check_circle;
-        statusText = "Awaiting Doctor Verification";
+        statusText = "Awaiting Verification";
         break;
       case "active":
         statusColor = AppStatusColors.active;
-        bgColor = AppStatusColors.active.withOpacity(0.1);
         statusIcon = Icons.pending;
-        statusText = "Dialysis Started";
+        statusText = "In Progress";
         break;
       default:
-        statusColor = canStart ? AppColors.darkPrimary : AppStatusColors.locked;
-        bgColor = canStart ? AppColors.darkPrimary.withOpacity(0.08) : AppStatusColors.locked.withOpacity(0.08);
-        statusIcon = canStart ? Icons.play_circle_outline : Icons.lock;
-        statusText = canStart ? "Ready to Start" : "Locked";
+        statusColor = AppStatusColors.pending;
+        statusIcon = Icons.hourglass_empty;
+        statusText = "Pending";
     }
+
+    // ✅ Check if session can be viewed (completed or verified)
+    final canView = dialysisSession.status == "completed" ||
+        dialysisSession.status == "verified";
 
     return Container(
       margin: EdgeInsets.only(bottom: screenWidth * 0.03),
       child: InkWell(
-        onTap: () async {
-          if (session.status == "acknowledged") {
-            await Get.to(
-                  () => DayDetailsPage(
-                materialSessionId: session.materialSessionId,
-                dayNumber: day.dayNumber,
-                patientId: widget.patientId,
-              ),
-            );
-            // Refresh data when coming back
-            final controller = Get.find<PatientPanelController>(tag: widget.patientId);
-            controller.fetchMaterialSessionDetails(widget.sessionId);
-          }
-        },
+        onTap: canView
+            ? () {
+          // ✅ Navigate to details page
+          Get.to(
+                () => DialysisSessionDetailsPage(
+              session: dialysisSession,
+              sessionNumber: sessionNumber,
+            ),
+          );
+        }
+            : null, // Disable tap for non-viewable sessions
         borderRadius: BorderRadius.circular(screenWidth * 0.04),
         child: Container(
           padding: EdgeInsets.all(screenWidth * 0.04),
           decoration: BoxDecoration(
-            color: bgColor,
+            color: statusColor.withOpacity(0.08),
             borderRadius: BorderRadius.circular(screenWidth * 0.04),
             border: Border.all(color: statusColor.withOpacity(0.4), width: 2),
           ),
-          child: Row(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Container(
-                width: screenWidth * 0.14,
-                height: screenWidth * 0.14,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [statusColor, statusColor.withOpacity(0.8)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  shape: BoxShape.circle,
-                  boxShadow: [
-                    BoxShadow(
-                      color: statusColor.withOpacity(0.3),
-                      blurRadius: 8,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Center(
-                  child: Text(
-                    "${day.dayNumber}",
-                    style: TextStyle(
-                      color: AppColors.white,
-                      fontSize: screenWidth * 0.055,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                ),
-              ),
-              SizedBox(width: screenWidth * 0.04),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      "Day ${day.dayNumber}",
-                      style: TextStyle(
-                        fontSize: screenWidth * 0.045,
-                        fontWeight: FontWeight.bold,
-                        color: AppColors.black,
+              Row(
+                children: [
+                  Container(
+                    width: screenWidth * 0.12,
+                    height: screenWidth * 0.12,
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(
+                        colors: [statusColor, statusColor.withOpacity(0.8)],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
                       ),
-                    ),
-                    SizedBox(height: screenWidth * 0.015),
-                    Row(
-                      children: [
-                        Icon(statusIcon, size: screenWidth * 0.042, color: statusColor),
-                        SizedBox(width: screenWidth * 0.015),
-                        Flexible(
-                          child: Text(
-                            statusText,
-                            style: TextStyle(
-                              fontSize: screenWidth * 0.036,
-                              color: statusColor,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: statusColor.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: Offset(0, 2),
                         ),
                       ],
                     ),
-                  ],
-                ),
+                    child: Center(
+                      child: Text(
+                        "$sessionNumber",
+                        style: TextStyle(
+                          color: AppColors.white,
+                          fontSize: screenWidth * 0.05,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: screenWidth * 0.04),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Session $sessionNumber",
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.045,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.black,
+                          ),
+                        ),
+                        SizedBox(height: screenWidth * 0.01),
+                        Row(
+                          children: [
+                            Icon(statusIcon,
+                                size: screenWidth * 0.04, color: statusColor),
+                            SizedBox(width: screenWidth * 0.015),
+                            Flexible(
+                              child: Text(
+                                statusText,
+                                style: TextStyle(
+                                  fontSize: screenWidth * 0.035,
+                                  color: statusColor,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  // ✅ Show appropriate icon based on whether it's viewable
+                  Container(
+                    padding: EdgeInsets.all(screenWidth * 0.02),
+                    decoration: BoxDecoration(
+                      color: statusColor.withOpacity(0.15),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      canView ? Icons.arrow_forward_ios : Icons.pending_actions,
+                      color: statusColor,
+                      size: screenWidth * 0.045,
+                    ),
+                  ),
+                ],
               ),
-              Container(
-                padding: EdgeInsets.all(screenWidth * 0.02),
-                decoration: BoxDecoration(
-                  color: statusColor.withOpacity(0.15),
-                  shape: BoxShape.circle,
+              if (dialysisSession.completedAt != null) ...[
+                SizedBox(height: screenWidth * 0.03),
+                Container(
+                  padding: EdgeInsets.all(screenWidth * 0.025),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.access_time,
+                          size: screenWidth * 0.04, color: AppColors.darkGrey),
+                      SizedBox(width: screenWidth * 0.02),
+                      Text(
+                        "Completed: ${_formatDate(dialysisSession.completedAt)}",
+                        style: TextStyle(
+                          fontSize: screenWidth * 0.033,
+                          color: AppColors.darkGrey,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-                child: Icon(
-                  session.status == "acknowledged"
-                      ? Icons.arrow_forward_ios
-                      : Icons.lock_outline,
-                  color: statusColor,
-                  size: screenWidth * 0.045,
+              ],
+              if (dialysisSession.parameters?.voluntary?.comments != null &&
+                  dialysisSession.parameters!.voluntary!.comments!.isNotEmpty) ...[
+                SizedBox(height: screenWidth * 0.02),
+                Container(
+                  padding: EdgeInsets.all(screenWidth * 0.025),
+                  decoration: BoxDecoration(
+                    color: AppColors.white,
+                    borderRadius: BorderRadius.circular(screenWidth * 0.02),
+                  ),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Icon(Icons.comment,
+                          size: screenWidth * 0.04, color: AppColors.darkGrey),
+                      SizedBox(width: screenWidth * 0.02),
+                      Expanded(
+                        child: Text(
+                          dialysisSession.parameters!.voluntary!.comments!,
+                          style: TextStyle(
+                            fontSize: screenWidth * 0.033,
+                            color: AppColors.darkGrey,
+                            fontStyle: FontStyle.italic,
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
-              ),
+              ],
+              // ✅ Add hint text for viewable sessions
+              if (canView) ...[
+                SizedBox(height: screenWidth * 0.015),
+                Text(
+                  "Tap to view full details",
+                  style: TextStyle(
+                    fontSize: screenWidth * 0.03,
+                    color: statusColor,
+                    fontStyle: FontStyle.italic,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
@@ -783,8 +1082,8 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
     );
   }
 
-  Widget _buildAcknowledgeButton(
-      BuildContext context, PatientPanelController controller, String sessionId,
+  Widget _buildAcknowledgeButton(BuildContext context,
+      PatientPanelController controller, String sessionId,
       double screenWidth, double screenHeight) {
     return Container(
       margin: EdgeInsets.all(screenWidth * 0.04),
@@ -833,7 +1132,6 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
           if (confirm == true) {
             final ok = await controller.acknowledgeSession(sessionId);
             if (ok) {
-              // Refresh the session details after acknowledgment
               await controller.fetchMaterialSessionDetails(widget.sessionId);
               Get.snackbar(
                 "Success",
@@ -868,30 +1166,19 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
   }
 
   Map<String, dynamic> _calculateStats(dynamic session) {
-    int total = session.days.length;
-    int completed = session.days.where((d) => d.status == "verified").length;
-    int active = session.days.where((d) => d.status == "active").length;
-    int pending = session.days.where((d) => d.status == "pending").length;
+    final dialysisSessions = session.dialysisSessions ?? [];
+    int total = session.totalSessionsAllowed ?? 0;
+    int completed = session.completedSessions ?? 0;
+    int verified =
+        dialysisSessions.where((s) => s.status == "verified").length;
+    int remaining = session.remainingSessions ?? 0;
 
     return {
       'total': total,
       'completed': completed,
-      'active': active,
-      'pending': pending,
+      'verified': verified,
+      'remaining': remaining,
     };
-  }
-
-  bool _canStartDay(dynamic session, int dayNumber) {
-    if (dayNumber == 1) return true;
-
-    try {
-      final previousDay = session.days.firstWhere(
-            (d) => d.dayNumber == dayNumber - 1,
-      );
-      return previousDay.status != "pending";
-    } catch (e) {
-      return false;
-    }
   }
 
   String _formatDate(dynamic dateValue) {
@@ -906,7 +1193,6 @@ class _MaterialSessionDetailsPageState extends State<MaterialSessionDetailsPage>
         return 'N/A';
       }
 
-      // Format: Dec 24, 2025 at 2:30 PM
       return DateFormat('MMM dd, yyyy \'at\' h:mm a').format(date);
     } catch (e) {
       return dateValue.toString();
