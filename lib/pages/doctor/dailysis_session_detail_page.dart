@@ -40,6 +40,10 @@ class _DialysisSessionDetailPageState extends State<DialysisSessionDetailPage> {
     final w = mq.size.width;
     final h = mq.size.height;
     final controller = Get.find<DoctorMaterialController>();
+    final readings = widget.session?.parameters?.readings;
+    final verifiedAt = widget.session.verifiedAt;
+    final verificationNotes = widget.session.verificationNotes;
+    final materials = widget.session?.materials?.pdMaterials;
 
 
     final status = widget.session.status ?? 'unknown';
@@ -153,6 +157,11 @@ class _DialysisSessionDetailPageState extends State<DialysisSessionDetailPage> {
                   _buildSessionInfoCard(w, h, status, completedAt, statusColor),
 
                   SizedBox(height: h * 0.025),
+                  if (status.toLowerCase() == 'verified') ...[
+                    SizedBox(height: h * 0.025),
+                    _buildVerificationCard(w, h, verifiedAt, verificationNotes),
+                  ],
+
 
                   // Parameters Section
                   if (voluntary != null) ...[
@@ -249,6 +258,28 @@ class _DialysisSessionDetailPageState extends State<DialysisSessionDetailPage> {
                   ],
 
                   SizedBox(height: h * 0.03),
+                  if (readings != null) ...[
+                    _buildSectionTitle(
+                      'Dialysis Readings',
+                      Icons.monitor_heart,
+                      Colors.deepPurple,
+                      w,
+                    ),
+                    SizedBox(height: h * 0.015),
+                    _buildReadingsSection(w, h, readings),
+                    SizedBox(height: h * 0.025),
+                  ],
+                  if (materials != null) ...[
+                    _buildSectionTitle(
+                      'Dialysis Materials Used',
+                      Icons.medical_services,
+                      Colors.brown,
+                      w,
+                    ),
+                    SizedBox(height: h * 0.015),
+                    _buildMaterialsSection(w, h, materials),
+                    SizedBox(height: h * 0.025),
+                  ],
                 ],
               ),
             ),
@@ -258,8 +289,96 @@ class _DialysisSessionDetailPageState extends State<DialysisSessionDetailPage> {
     );
   }
 
-  Widget _buildVerifySection(double w, double h) {
+  Widget _buildMaterialsSection(double w, double h, dynamic materials) {
+    return _buildParameterCard(
+      'PD Fluids & Consumables',
+      Icons.water_drop,
+      Colors.brown,
+      w,
+      h,
+      [
+        _buildParameterItem('1.5% 2L', '${materials.capd.fluid1_5_2L}', w),
+        _buildParameterItem('2.5% 2L', '${materials.capd.fluid2_5_2L}', w),
+        _buildParameterItem('4.25% 2L', '${materials.capd.fluid4_25_2L}', w),
+        _buildParameterItem('Icodextrin 2L', '${materials.icodextrin2L}', w),
+        _buildParameterItem('Transfer Set', '${materials.transferSet}', w),
+        _buildParameterItem('Minicap', '${materials.minicap}', w),
+      ],
+    );
+  }
 
+  Widget _buildReadingsSection(double w, double h, dynamic readings) {
+    return _buildParameterCard(
+      'Machine Readings',
+      Icons.speed,
+      Colors.deepPurple,
+      w,
+      h,
+      [
+        _buildParameterItem('Fill Volume', '${readings.fillVolume} L', w),
+        _buildParameterItem('Drain Volume', '${readings.drainVolume} L', w),
+        _buildParameterItem('Fill Time', '${readings.fillTime} min', w),
+        _buildParameterItem('Drain Time', '${readings.drainTime} min', w),
+      ],
+    );
+  }
+
+  Widget _buildVerificationCard(double w, double h, DateTime? verifiedAt, String? notes) {
+    return Container(
+      padding: EdgeInsets.all(w * 0.04),
+      decoration: BoxDecoration(
+        color: Colors.green.withOpacity(0.05),
+        borderRadius: BorderRadius.circular(w * 0.04),
+        border: Border.all(color: Colors.green.withOpacity(0.3)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.verified, color: Colors.green, size: w * 0.06),
+              SizedBox(width: w * 0.02),
+              Text(
+                'Doctor Verification',
+                style: TextStyle(
+                  fontSize: w * 0.045,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+            ],
+          ),
+          SizedBox(height: h * 0.015),
+          if (verifiedAt != null)
+            _buildInfoRow('Verified At', _formatDateBeautiful(verifiedAt), w),
+          if (notes != null && notes.isNotEmpty) ...[
+            SizedBox(height: h * 0.015),
+            Text(
+              'Doctor Notes',
+              style: TextStyle(
+                fontSize: w * 0.038,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+            SizedBox(height: h * 0.01),
+            Container(
+              width: double.infinity,
+              padding: EdgeInsets.all(w * 0.03),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(w * 0.02),
+              ),
+              child: Text(
+                notes,
+                style: TextStyle(fontSize: w * 0.038),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildVerifySection(double w, double h) {
     return Container(
       padding: EdgeInsets.all(w * 0.045),
       decoration: BoxDecoration(

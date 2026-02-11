@@ -1,4 +1,5 @@
 import 'package:digitaldailysis/pages/patient/VideoPlayerScreen.dart';
+import 'package:digitaldailysis/pages/patient/display_patient.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:intl/intl.dart';
@@ -198,6 +199,71 @@ class PatientHomeScreen extends StatelessWidget {
           ),
 
           SizedBox(height: h * 0.035),
+
+          // ================= MY PROFILE CARD =================
+          InkWell(
+            onTap: () {
+              Get.to(() => DisplayPatientPage(
+                patientId: patient.id ?? patient._id,
+              ));
+            },
+            borderRadius: BorderRadius.circular(w * 0.04),
+            child: Container(
+              margin: EdgeInsets.only(bottom: h * 0.03),
+              padding: EdgeInsets.all(w * 0.05),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(w * 0.04),
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.black.withOpacity(0.08),
+                    blurRadius: 12,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    padding: EdgeInsets.all(w * 0.03),
+                    decoration: BoxDecoration(
+                      color: AppColors.darkPrimary.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      Icons.person,
+                      color: AppColors.darkPrimary,
+                      size: w * 0.07,
+                    ),
+                  ),
+                  SizedBox(width: w * 0.04),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'My Medical Profile',
+                          style: TextStyle(
+                            fontSize: w * 0.045,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        SizedBox(height: h * 0.004),
+                        Text(
+                          'View your dialysis and health details',
+                          style: TextStyle(
+                            fontSize: w * 0.036,
+                            color: AppColors.darkGrey,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Icon(Icons.chevron_right, color: AppColors.mediumGrey),
+                ],
+              ),
+            ),
+          ),
 
           // ================= HEADER =================
           Text(

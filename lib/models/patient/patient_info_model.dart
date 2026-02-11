@@ -197,26 +197,42 @@ class DialysisSession {
   final String sessionId;
   final String status;
   final DateTime? completedAt;
+  final DateTime? verifiedAt;
+  final String? verificationNotes;
+  final String? verifiedBy;
   final SessionParameters? parameters;
+  final Materials? materials;
   final List<MaterialImage> images;
 
   DialysisSession({
     required this.sessionId,
     required this.status,
     required this.completedAt,
+    required this.verifiedAt,
+    required this.verificationNotes,
+    required this.verifiedBy,
     required this.parameters,
+    required this.materials,
     required this.images,
   });
 
   factory DialysisSession.fromJson(Map<String, dynamic> j) {
     return DialysisSession(
-      sessionId: j['sessionId'] ?? '',
+      sessionId: j['sessionId'] ?? j['_id'] ?? '',
       status: j['status'] ?? '',
       completedAt: j['completedAt'] != null
           ? DateTime.parse(j['completedAt'])
           : null,
+      verifiedAt: j['verifiedAt'] != null
+          ? DateTime.parse(j['verifiedAt'])
+          : null,
+      verificationNotes: j['verificationNotes'],
+      verifiedBy: j['verifiedBy'],
       parameters: j['parameters'] != null
           ? SessionParameters.fromJson(j['parameters'])
+          : null,
+      materials: j['materials'] != null
+          ? Materials.fromJson(j['materials'])
           : null,
       images: (j['images'] as List<dynamic>?)
           ?.map((e) => MaterialImage.fromJson(e))
@@ -225,15 +241,21 @@ class DialysisSession {
     );
   }
 }
+
+
 class SessionParameters {
   final VoluntaryParameters? voluntary;
+  final DialysisReadings? readings;
 
-  SessionParameters({this.voluntary});
+  SessionParameters({this.voluntary, this.readings});
 
   factory SessionParameters.fromJson(Map<String, dynamic> j) {
     return SessionParameters(
       voluntary: j['voluntary'] != null
           ? VoluntaryParameters.fromJson(j['voluntary'])
+          : null,
+      readings: j['readings'] != null
+          ? DialysisReadings.fromJson(j['readings'])
           : null,
     );
   }
@@ -389,3 +411,27 @@ class DayItem {
     );
   }
 }
+
+class DialysisReadings {
+  final int? fillVolume;
+  final int? drainVolume;
+  final int? fillTime;
+  final int? drainTime;
+
+  DialysisReadings({
+    this.fillVolume,
+    this.drainVolume,
+    this.fillTime,
+    this.drainTime,
+  });
+
+  factory DialysisReadings.fromJson(Map<String, dynamic> j) {
+    return DialysisReadings(
+      fillVolume: j['fillVolume'],
+      drainVolume: j['drainVolume'],
+      fillTime: j['fillTime'],
+      drainTime: j['drainTime'],
+    );
+  }
+}
+

@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:digitaldailysis/controllers/patient_info_controller.dart';
 import 'package:digitaldailysis/models/patient/patient_info_model.dart';
+import 'package:digitaldailysis/pages/doctor/patient_profile_page.dart';
 import 'package:intl/intl.dart';
 
 class PatientInfoScreen extends StatelessWidget {
@@ -83,12 +84,32 @@ class PatientInfoScreen extends StatelessWidget {
                             mainAxisAlignment: MainAxisAlignment.center,
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text(
-                                patient.name,
-                                style: TextStyle(
-                                  fontSize: w * 0.06,
-                                  fontWeight: FontWeight.bold,
-                                  color: Colors.white,
+                              InkWell(
+                                onTap: () {
+                                  Get.to(
+                                        () => PatientProfilePage(
+                                      patientId: patient.id,
+                                    ),
+                                  );
+                                },
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Text(
+                                      patient.name,
+                                      style: TextStyle(
+                                        fontSize: w * 0.06,
+                                        fontWeight: FontWeight.bold,
+                                        color: Colors.white,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 6),
+                                    const Icon(
+                                      Icons.open_in_new,
+                                      color: Colors.white70,
+                                      size: 18,
+                                    )
+                                  ],
                                 ),
                               ),
                               Text(

@@ -79,6 +79,14 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
   // Comments
   final commentsController = TextEditingController();
 
+  // Dialysis Readings
+  bool readingsMeasured = false;
+
+  final fillVolumeController = TextEditingController();
+  final drainVolumeController = TextEditingController();
+  final fillTimeController = TextEditingController();
+  final drainTimeController = TextEditingController();
+
   // Image
   File? selectedImage;
   Uint8List? webImage;
@@ -529,6 +537,67 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
               ),
             ),
 
+            SizedBox(height: height * 0.025),
+
+            _buildSectionCard(
+              context: context,
+              icon: Icons.science,
+              title: "Dialysis Readings",
+              color: AppStatusColors.active,
+              child: Column(
+                children: [
+                  _buildCheckboxTile(
+                    "Enter Dialysis Readings",
+                    readingsMeasured,
+                        (val) => setState(() => readingsMeasured = val!),
+                  ),
+
+                  if (readingsMeasured) ...[
+                    SizedBox(height: height * 0.02),
+
+                    _buildTextField(
+                      context: context,
+                      controller: fillVolumeController,
+                      label: "Fill Volume (ml)",
+                      hint: "e.g., 2000",
+                      icon: Icons.water_drop,
+                      keyboardType: TextInputType.number,
+                    ),
+                    SizedBox(height: height * 0.015),
+
+                    _buildTextField(
+                      context: context,
+                      controller: drainVolumeController,
+                      label: "Drain Volume (ml)",
+                      hint: "e.g., 1950",
+                      icon: Icons.water,
+                      keyboardType: TextInputType.number,
+                    ),
+                    SizedBox(height: height * 0.015),
+
+                    _buildTextField(
+                      context: context,
+                      controller: fillTimeController,
+                      label: "Fill Time (minutes)",
+                      hint: "e.g., 12",
+                      icon: Icons.timer,
+                      keyboardType: TextInputType.number,
+                    ),
+                    SizedBox(height: height * 0.015),
+
+                    _buildTextField(
+                      context: context,
+                      controller: drainTimeController,
+                      label: "Drain Time (minutes)",
+                      hint: "e.g., 15",
+                      icon: Icons.timer_outlined,
+                      keyboardType: TextInputType.number,
+                    ),
+                  ],
+                ],
+              ),
+            ),
+
             SizedBox(height: height * 0.04),
 
             // Finish Button
@@ -592,7 +661,14 @@ class _DayDialysisScreenState extends State<DayDialysisScreen> {
                         "newAbdominalPain": newAbdominalPain,
                         "suddenUnwell": suddenUnwell,
                         "comments": commentsController.text,
-                      }
+                      },
+                      if (readingsMeasured)
+                        "readings": {
+                          "fillVolume": int.tryParse(fillVolumeController.text) ?? 0,
+                          "drainVolume": int.tryParse(drainVolumeController.text) ?? 0,
+                          "fillTime": int.tryParse(fillTimeController.text) ?? 0,
+                          "drainTime": int.tryParse(drainTimeController.text) ?? 0,
+                        }
                     };
 
                     /// 3. Finish dialysis (main API)

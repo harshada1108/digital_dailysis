@@ -269,8 +269,8 @@ class PatientRegistrationController extends GetxController {
       print("Creating medical profile for patient: ${registeredPatientId.value}");
       print("Medical profile body: ${jsonEncode(body)}");
 
-      final response = await apiClient.postData(
-        '${AppConstants.BASE_URL}/api/upload/medical-profile',
+      final response = await apiClient.patchData(
+        '${AppConstants.BASE_URL}/api/upload/doctor/medical-profile',
         body,
       );
 
